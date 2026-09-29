@@ -1084,7 +1084,18 @@ st.markdown(
         box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
     }
 
-    .login-event {
+    /* Center the Create Account form without changing the Login form */
+    div[data-testid="stForm"]:has(input[aria-label="Full Name"]) {
+        max-width: 620px;
+        margin: 28px auto 36px auto;
+        padding: 28px 30px 26px 30px;
+        border: 1px solid #dbeafe;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 12px 32px rgba(30, 64, 175, 0.10);
+    }
+
+        .login-event {
         display: inline-block;
         padding: 8px 14px;
         border: 1px solid #bfdbfe;
