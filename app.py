@@ -111,7 +111,22 @@ def draw_findings(image: Image.Image, locations: list[dict[str, Any]]) -> Image.
     return canvas
 
 
-def _show_result(result: dict[str, Any], annotated: Image.Image) -> None:
+def _render_history(container) -> None:
+    """Render the latest saved diagnoses into a reusable sidebar placeholder."""
+    with container.container():
+        st.markdown("**Recent diagnosis history**")
+        records = list_diagnoses(5)
+        if not records:
+            st.caption("No saved diagnoses yet.")
+            return
+        for record in records:
+            st.caption(
+                f"#{record['id']} · {record['device']} · "
+                f"{record['status']} · {record['confidence']:.0%}"
+            )
+
+
+def _show_result(result: dict[str, Any], annotated: Image.Image, history_container) -> None:
     diagnosis = result["diagnosis"]
     severity = result["severity"]
     reasoning = result["reasoning"]
@@ -171,11 +186,20 @@ def _show_result(result: dict[str, Any], annotated: Image.Image) -> None:
     with st.expander("Safety limitations", expanded=False):
         for item in diagnosis["limitations"]:
             st.write(f"• {item}")
+
     if st.button("Save diagnosis", key="save_diagnosis"):
         record_id = save_diagnosis(diagnosis)
         st.success(f"Diagnosis saved to history (ID {record_id}).")
+        _render_history(history_container)
+
     pdf_bytes = generate_pdf_report(diagnosis)
-    st.download_button("PDF report", data=pdf_bytes, file_name="electrodiagnose_report.pdf", mime="application/pdf", use_container_width=True)
+    st.download_button(
+        "PDF report",
+        data=pdf_bytes,
+        file_name="electrodiagnose_report.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+    )
 
 
 st.set_page_config(
@@ -210,10 +234,9 @@ with st.sidebar:
     st.divider()
     st.markdown("**Pipeline**")
     st.write("Image → Detection → Component → Localization → Reasoning → Severity → Diagnosis")
-    st.divider()
-    st.markdown("**Recent diagnosis history**")
-    for record in list_diagnoses(5):
-        st.caption(f"#{record['id']} · {record['device']} · {record['status']} · {record['confidence']:.0%}")
+    history_container = st.empty()
+
+_render_history(history_container)
 
 uploaded_files = st.file_uploader(
     "Upload device / component evidence",
@@ -244,7 +267,6 @@ if analyze:
     else:
         all_locations: list[dict[str, Any]] = []
         all_detections: list[dict[str, Any]] = []
-        all_reasoning_evidence: list[str] = []
         last_image: Image.Image | None = None
 
         progress = st.progress(0.0, text="Preparing evidence...")
@@ -273,7 +295,6 @@ if analyze:
             )
             all_detections.extend(result["detections"])
             all_locations.extend(result["locations"])
-            all_reasoning_evidence.extend(result["reasoning"]["evidence"])
             progress.progress(
                 index / len(uploaded_files),
                 text=f"Processed {index}/{len(uploaded_files)} evidence image(s)",
@@ -305,7 +326,7 @@ if analyze:
                 st.info("Demo mode: findings are deterministic presentation data, not model predictions.")
             else:
                 st.info("YOLO mode: results depend on the selected model and its trained classes.")
-            _show_result(combined, annotated)
+            _show_result(combined, annotated, history_container)
 
 st.divider()
 st.caption(
