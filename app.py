@@ -353,7 +353,10 @@ def _render_pie_chart(counts: dict[str, int], title: str) -> None:
     st.markdown(chart, unsafe_allow_html=True)
 
 def _dashboard(records: list[dict[str, Any]]) -> None:
-    <div class="hogwarts-brand"><span class="crest">⚡</span><span class="name">HOGWARTS LEGACY</span><span class="edition">5.0</span></div>
+        st.markdown(
+        '<div class="hogwarts-brand"><span class="crest">⚡</span><span class="name">HOGWARTS LEGACY</span><span class="edition">5.0</span></div>',
+        unsafe_allow_html=True,
+    )
 
     st.title("👋 Welcome to ElectroDiagnose")
     st.caption("AI-assisted visual and multimodal diagnostic dashboard")
