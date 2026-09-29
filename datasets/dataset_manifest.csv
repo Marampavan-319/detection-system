@@ -1,0 +1,5 @@
+device,source,source_type,annotation_format,raw_path,target_classes,notes
+laptop,Public laptop defect dataset,web_dataset,object_detection,datasets/raw/laptop,"broken|crack|scratch|dent|screen_damage|missing_part","Use only legally accessible/downloadable data; do not commit the raw images to GitHub."
+smartphone,Public smartphone screen defect dataset,web_dataset,object_detection,datasets/raw/smartphone,"crack|broken|scratch|screen_damage","Map source-specific screen defects into the unified prototype vocabulary."
+pcb,PCB defect dataset downloaded through Kaggle,non_github_dataset,bounding_box,datasets/raw/pcb,"open_circuit|short_circuit|mousebite|spur|pin_hole|spurious_copper","Do not clone or depend on another GitHub repository."
+router,Custom/public router images,custom,manual_or_object_detection,datasets/raw/router,"missing_part|broken|scratch|screen_damage","Router training data is intentionally kept small for the prototype; combine with software/error evidence."
