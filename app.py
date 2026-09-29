@@ -923,11 +923,11 @@ def _ai_detector() -> None:
 def _login_screen() -> None:
     """Render login and account creation before exposing the application."""
     st.markdown(
-        '<div class="login-shell"><div class="login-card">'+
+        '<div class="login-page"><div class="login-shell"><div class="login-card">'+
         '<div class="login-event">⚡ HOGWARTS LEGACY <span>5.0</span></div>'+
         '<div class="login-title">Welcome to ElectroDiagnose</div>'+
         '<div class="login-subtitle">AI-powered defect analysis for devices and electronics</div>'+
-        '</div></div>',
+        '</div></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -1065,9 +1065,19 @@ st.markdown(
     }
 
     .login-shell {
-        width: min(92vw, 620px);
-        margin: 8vh auto 8vh auto;
-        padding: 0 28px;
+        width: min(92vw, 560px);
+        margin: 0 auto;
+        padding: 0 20px;
+        box-sizing: border-box;
+    }
+
+    .login-page {
+        min-height: 78vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
         box-sizing: border-box;
     }
 
