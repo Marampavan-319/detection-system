@@ -624,18 +624,55 @@ def _history(records: list[dict[str, Any]]) -> None:
                 st.write(record["summary"])
 
 
-def _profile() -> None:
+def _profile(records: list[dict[str, Any]]) -> None:
     st.title("👤 Profile")
-    st.caption("ElectroDiagnose user profile")
+    st.caption("Your ElectroDiagnose profile and usage summary.")
+
+    total = len(records)
+    defects = sum(r["status"] == "DEFECT_DETECTED" for r in records)
+    high = sum(r["severity"] == "HIGH" for r in records)
+    avg_confidence = (
+        sum(float(r["confidence"]) for r in records) / total
+        if total
+        else 0.0
+    )
+
+    st.markdown("### 👤 Profile Information")
     p1, p2 = st.columns(2)
+
     with p1:
-        st.markdown("### User")
-        st.write("ElectroDiagnose User")
-        st.caption("Hackathon prototype account")
+        with st.container(border=True):
+            st.markdown("#### User")
+            st.markdown("**ElectroDiagnose User**")
+            st.caption("Hackathon prototype account")
+            st.write("Role: Diagnostic user")
+
     with p2:
-        st.markdown("### System")
-        st.write("AI-assisted visual diagnosis")
-        st.caption("Local SQLite history · YOLO-compatible detection pipeline")
+        with st.container(border=True):
+            st.markdown("#### System")
+            st.markdown("**ElectroDiagnose**")
+            st.caption("AI-assisted visual defect analysis")
+            st.write("Diagnosis history: Local SQLite database")
+
+    st.markdown("### 📊 My Usage")
+    u1, u2, u3, u4 = st.columns(4)
+    u1.metric("Total Checks", total)
+    u2.metric("Problems Found", defects)
+    u3.metric("Serious Problems", high)
+    u4.metric("AI Surety", f"{avg_confidence:.0%}")
+
+    st.markdown("### 🔧 What ElectroDiagnose Does")
+    st.info(
+        "ElectroDiagnose checks uploaded device images and other evidence, "
+        "then provides possible defects, possible causes, recommended next "
+        "actions, confidence, severity, and safety limitations."
+    )
+
+    st.markdown("### 🔐 Account")
+    st.caption(
+        "Login and account authentication will be connected in the final "
+        "remodel stage."
+    )
 
 
 def _ai_detector() -> None:
