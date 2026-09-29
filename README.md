@@ -100,7 +100,7 @@ Implemented `src/reasoning.py` to combine structured visual/localization finding
 Implemented `src/severity.py` to convert localized visual evidence into deterministic confidence, severity, and priority values with an explainable rationale. The scorer can incorporate the structured reasoning evidence from Step 7 and explicitly distinguishes visible-risk scoring from proof of an internal electrical fault. `scripts/validate_severity.py` covers high, medium, empty-evidence, and router connection-state cases.
 
 ### Step 9 — Diagnostic result engine
-Create a consistent diagnostic response format.
+Implemented `src/diagnosis.py` to combine defect localization, multimodal reasoning, and severity/confidence into one consistent JSON-friendly diagnostic result. The engine reports status, device, findings, confidence, severity, priority, possible causes, next actions, limitations, and whether human review is required. It uses `INSUFFICIENT_EVIDENCE` when no visible defect is localized rather than treating a missing detection as proof that the device is healthy. `scripts/validate_diagnosis.py` validates both a detected PCB short and an empty-evidence case.
 
 ### Step 10 — Streamlit product UI
 Connect all analysis modules to the user-facing dashboard.
