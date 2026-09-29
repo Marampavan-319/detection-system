@@ -630,9 +630,22 @@ def _ai_detector() -> None:
                     st.info("YOLO mode: results depend on the selected model and its trained classes.")
                 st.session_state["latest_result"] = combined
                 st.session_state["latest_annotated"] = annotated
+                st.session_state["latest_evidence_images"] = [
+                    ImageOps.exif_transpose(Image.open(BytesIO(uploaded.getvalue()))).convert("RGB")
+                    for uploaded in uploaded_files
+                ]
+                st.session_state["latest_symptoms"] = symptoms
+                st.session_state["latest_ocr_text"] = ocr_text
 
     if st.session_state["latest_result"] is not None and st.session_state["latest_annotated"] is not None:
-        _show_result(st.session_state["latest_result"], st.session_state["latest_annotated"], history_container)
+        _show_result(
+            st.session_state["latest_result"],
+            st.session_state["latest_annotated"],
+            history_container,
+            st.session_state.get("latest_evidence_images", []),
+            st.session_state.get("latest_symptoms", ""),
+            st.session_state.get("latest_ocr_text", ""),
+        )
 
 
 
