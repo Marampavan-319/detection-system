@@ -1065,23 +1065,56 @@ st.markdown(
     }
 
     .login-shell {
-        width: min(92vw, 620px);
-        margin: 8vh auto 8vh auto;
-        padding: 0 28px;
-        box-sizing: border-box;
+        max-width: 560px;
+        margin: 7vh auto 0 auto;
     }
 
     .login-card {
-        width: 100%;
-        max-width: 560px;
-        margin: 0 auto;
         text-align: center;
-        padding: 34px 34px 24px 34px;
-        box-sizing: border-box;
-        border: 1px solid #dbeafe;
-        border-radius: 22px;
-        background: rgba(255, 255, 255, 0.97);
-        box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
+        padding: 26px 24px 12px 24px;
+    }
+
+    /* Centered Login / Create Account option cards */
+    [data-testid="stRadio"] {
+        max-width: 560px;
+        margin: 22px auto 26px auto;
+    }
+
+    [data-testid="stRadio"] > div {
+        justify-content: center;
+        gap: 18px;
+    }
+
+    [data-testid="stRadio"] label {
+        flex: 0 0 220px;
+        min-height: 76px;
+        padding: 18px 24px !important;
+        border: 1px solid #cbdff5;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 5px 16px rgba(30, 64, 175, 0.08);
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    [data-testid="stRadio"] label:hover {
+        border-color: #60a5fa;
+        background: #f8fbff;
+        box-shadow: 0 8px 20px rgba(30, 64, 175, 0.12);
+        transform: translateY(-1px);
+    }
+
+    [data-testid="stRadio"] label:has(input:checked) {
+        border: 2px solid #2563eb;
+        background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+        box-shadow: 0 8px 22px rgba(37, 99, 235, 0.14);
+    }
+
+    [data-testid="stRadio"] label > div:first-child {
+        margin-right: 8px;
     }
 
     .login-event {
