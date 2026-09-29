@@ -174,6 +174,8 @@ def _show_result(result: dict[str, Any], annotated: Image.Image) -> None:
     if st.button("Save diagnosis", key="save_diagnosis"):
         record_id = save_diagnosis(diagnosis)
         st.success(f"Diagnosis saved to history (ID {record_id}).")
+    pdf_bytes = generate_pdf_report(diagnosis)
+    st.download_button("PDF report", data=pdf_bytes, file_name="electrodiagnose_report.pdf", mime="application/pdf", use_container_width=True)
 
 
 st.set_page_config(
