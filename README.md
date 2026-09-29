@@ -88,7 +88,7 @@ Implemented deterministic image preprocessing in `src/preprocessing.py`: EXIF or
 Implemented a lazy-loading Ultralytics YOLO inference wrapper in src/detection.py with configurable confidence and IoU thresholds and a stable detection schema. scripts/validate_detection.py provides a reproducible smoke test, while configs/yolo_inference.yaml records default inference settings.
 
 ### Step 5 — Component identification
-Map detected regions to device components and subsystems.
+Implemented `src/components.py` to map detector classes into device components and subsystems for PCB, laptop, smartphone, and router categories. The mapping layer is explicit and deterministic, preserves detector confidence and bounding boxes, and falls back to unknown component/subsystem when a class is not mapped. `scripts/validate_components.py` validates the mapping independently of model inference.
 
 ### Step 6 — Defect localization
 Detect and annotate visible abnormalities.
