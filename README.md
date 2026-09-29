@@ -85,7 +85,7 @@ Collect and organize prototype images for laptops, smartphones, PCBs, and router
 Implemented deterministic image preprocessing in `src/preprocessing.py`: EXIF orientation correction, RGB conversion, aspect-ratio-preserving 640x640 letterbox resizing, and float32 normalization to [0, 1]. `scripts/validate_preprocessing.py` validates individual images or directories before inference. The preprocessing stage preserves the original image and keeps normalized data in memory rather than rewriting source images.
 
 ### Step 4 — Computer vision
-Connect YOLO for device/component/defect detection.
+Implemented a lazy-loading Ultralytics YOLO inference wrapper in src/detection.py with configurable confidence and IoU thresholds and a stable detection schema. scripts/validate_detection.py provides a reproducible smoke test, while configs/yolo_inference.yaml records default inference settings.
 
 ### Step 5 — Component identification
 Map detected regions to device components and subsystems.
