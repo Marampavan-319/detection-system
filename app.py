@@ -369,22 +369,6 @@ def _dashboard(records: list[dict[str, Any]]) -> None:
     k3.metric("High severity", high)
     k4.metric("Medium / Low", medium + low)
 
-    st.markdown("### Quick access")
-    q1, q2, q3, q4 = st.columns(4)
-    cards = [
-        ("🤖", "AI Detector", "Start a new diagnostic analysis", "AI Detector"),
-        ("🕘", "History", "Open saved diagnostic cases", "History"),
-        ("📊", "Analytics", "Explore device and status trends", "Analytics"),
-        ("👤", "Profile", "View your ElectroDiagnose profile", "Profile"),
-    ]
-    for col, (icon, title, description, target) in zip((q1, q2, q3, q4), cards):
-        with col:
-            st.markdown(f"### {icon} {title}")
-            st.caption(description)
-            if st.button(f"Open {title}", key=f"dashboard_{target.lower().replace(' ', '_')}"):
-                st.session_state["page"] = target
-                st.rerun()
-
     st.markdown("### Device distribution")
     if records:
         device_counts = {}
