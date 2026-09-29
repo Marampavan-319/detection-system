@@ -1,0 +1,18 @@
+path: datasets/yolo
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: broken
+  1: crack
+  2: scratch
+  3: dent
+  4: screen_damage
+  5: missing_part
+  6: open_circuit
+  7: short_circuit
+  8: mousebite
+  9: spur
+  10: pin_hole
+  11: spurious_copper
