@@ -415,7 +415,7 @@ def _dashboard(records: list[dict[str, Any]]) -> None:
 
 def _analytics(records: list[dict[str, Any]]) -> None:
     st.title("📊 Analytics")
-    st.caption("Live analytics calculated from saved SQLite diagnosis history.")
+    st.caption("A simple view of the checks and problems found so far.")
 
     if not records:
         st.info("No saved diagnoses yet. Run and save a diagnosis to see analytics.")
@@ -438,21 +438,21 @@ def _analytics(records: list[dict[str, Any]]) -> None:
     review = sum(bool(r["review_required"]) for r in records)
     avg_confidence = sum(float(r["confidence"]) for r in records) / total
 
-    st.markdown("### 📌 Overview")
+    st.markdown("### 📌 At a Glance")
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Total Cases", total)
-    k2.metric("Defects Detected", defects)
-    k3.metric("High Severity", high)
-    k4.metric("Avg. Confidence", f"{avg_confidence:.0%}")
+    k1.metric("Total Checks", total)
+    k2.metric("Problems Found", defects)
+    k3.metric("Serious Problems", high)
+    k4.metric("AI Surety", f"{avg_confidence:.0%}")
 
-    st.markdown("### 📈 Case Insights")
+    st.markdown("### 📈 What Problems Are We Seeing?")
     a1, a2 = st.columns(2)
     with a1:
-        _render_pie_chart(device_counts, "Cases by device")
+        _render_pie_chart(device_counts, "Problems by device")
     with a2:
-        _render_pie_chart(status_counts, "Diagnostic status")
+        _render_pie_chart(status_counts, "Result of the check")
 
-    st.markdown("### ⚠️ Severity Distribution")
+    st.markdown("### ⚠️ How Serious Are the Problems?")
     severity_order = ["High", "Medium", "Low", "Unknown"]
     ordered_severity = {
         key: severity_counts[key]
@@ -461,15 +461,15 @@ def _analytics(records: list[dict[str, Any]]) -> None:
     }
     st.bar_chart(ordered_severity)
 
-    st.markdown("### 🔍 Diagnostic Quality")
+    st.markdown("### 🔍 How Sure Is the AI?")
     q1, q2, q3 = st.columns(3)
-    q1.metric("Average Confidence", f"{avg_confidence:.0%}")
-    q2.metric("Review Required", review)
-    q3.metric("Insufficient Evidence", status_counts.get("Insufficient Evidence", 0))
+    q1.metric("How Sure the AI Is", f"{avg_confidence:.0%}")
+    q2.metric("Needs Another Check", review)
+    q3.metric("Not Enough Information", status_counts.get("Insufficient Evidence", 0))
 
     st.markdown("### 🕘 Recent Cases")
     for record in records[:5]:
-        status_label = record["status"].replace("_", " ").title()
+        status_label = {"DEFECT_DETECTED": "Problem Found", "INSUFFICIENT_EVIDENCE": "Not Enough Information"}.get(record["status"], record["status"].replace("_", " ").title())
         saved_time = record["timestamp"].replace("T", " ")[:19]
         st.write(
             f"**Case #{record['id']}** · {record['device'].title()} · "
@@ -584,7 +584,7 @@ def _history(records: list[dict[str, Any]]) -> None:
     st.markdown("### 📋 Cases")
 
     for record in filtered:
-        status_label = record["status"].replace("_", " ").title()
+        status_label = {"DEFECT_DETECTED": "Problem Found", "INSUFFICIENT_EVIDENCE": "Not Enough Information"}.get(record["status"], record["status"].replace("_", " ").title())
         severity_label = record["severity"].title()
         priority_label = record["priority"].title()
         saved_time = record["timestamp"].replace("T", " ")[:19]
