@@ -82,7 +82,7 @@ Repository, Streamlit starter UI, dependencies, and module scaffolding.
 Collect and organize prototype images for laptops, smartphones, PCBs, and routers. The repository now contains a local-only dataset manifest, unified YOLO class list, YOLO configuration, and a preparation script. The pipeline does not clone or depend on another GitHub repository.
 
 ### Step 3 — Image processing
-Implement image loading, validation, resizing, and preprocessing.
+Implemented deterministic image preprocessing in `src/preprocessing.py`: EXIF orientation correction, RGB conversion, aspect-ratio-preserving 640x640 letterbox resizing, and float32 normalization to [0, 1]. `scripts/validate_preprocessing.py` validates individual images or directories before inference. The preprocessing stage preserves the original image and keeps normalized data in memory rather than rewriting source images.
 
 ### Step 4 — Computer vision
 Connect YOLO for device/component/defect detection.
