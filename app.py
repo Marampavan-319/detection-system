@@ -202,15 +202,28 @@ def _show_result(
         annotated.save(annotated_path, format="PNG")
         image_paths.append(str(annotated_path))
 
-        record_id = save_diagnosis(
-            diagnosis,
-            evidence={
+        if st.session_state.get("demo_mode", False):
+            record_id = len(st.session_state.get("demo_records", [])) + 1
+            demo_record = dict(diagnosis)
+            demo_record["id"] = record_id
+            demo_record["timestamp"] = "Demo session"
+            demo_record["evidence"] = {
                 "images": image_paths,
                 "reasoning": reasoning,
                 "symptoms": symptoms,
                 "ocr_text": ocr_text,
-            },
-        )
+            }
+            st.session_state["demo_records"].insert(0, demo_record)
+        else:
+            record_id = save_diagnosis(
+                diagnosis,
+                evidence={
+                    "images": image_paths,
+                    "reasoning": reasoning,
+                    "symptoms": symptoms,
+                    "ocr_text": ocr_text,
+                },
+            )
         st.session_state["last_saved_diagnosis_id"] = record_id
         st.session_state["history_render_token"] += 1
         st.session_state["pending_case_id"] = None
@@ -942,6 +955,24 @@ def _login_screen() -> None:
             password = st.text_input("Password", type="password")
             submitted = st.form_submit_button("🔐 Login", use_container_width=True, type="primary")
             switch_to_create = st.form_submit_button("Create Account", use_container_width=True)
+        
+        if st.button("🎯 Enter Demo Account — No Password", use_container_width=True, key="demo_login"):
+            st.session_state["authenticated"] = True
+            st.session_state["demo_mode"] = True
+            st.session_state["user"] = {
+                "id": "demo",
+                "name": "Demo User",
+                "role": "Judge / Demo",
+                "phone": "Demo",
+                "email": "demo@electrodiagnose.local",
+            }
+            st.session_state["page"] = "Dashboard"
+            st.session_state["profile_name"] = "Demo User"
+            st.session_state["profile_role"] = "Judge / Demo"
+            st.session_state["profile_number"] = "Demo"
+            st.session_state["profile_email"] = "demo@electrodiagnose.local"
+            st.session_state["demo_records"] = []
+            st.rerun()
         if switch_to_create:
             st.session_state["auth_mode"] = "Create Account"
             st.rerun()
@@ -1288,6 +1319,10 @@ if "authenticated" not in st.session_state:
     st.session_state["authenticated"] = False
 if "user" not in st.session_state:
     st.session_state["user"] = None
+if "demo_mode" not in st.session_state:
+    st.session_state["demo_mode"] = False
+if "demo_records" not in st.session_state:
+    st.session_state["demo_records"] = []
 
 if "latest_result" not in st.session_state:
     st.session_state["latest_result"] = None
@@ -1324,11 +1359,23 @@ with st.sidebar:
     if st.button("🚪 Logout", use_container_width=True):
         st.session_state["authenticated"] = False
         st.session_state["user"] = None
-        st.session_state["page"] = "Dashboard"
+        st.session_state["demo_mode"] = False
+        st.session_state["demo_records"] = []
+        st.session_state["latest_result"] = None
+        st.session_state["latest_annotated"] = None
+        st.session_state["latest_evidence_images"] = []
+        st.session_state["latest_symptoms"] = ""
+        st.session_state["latest_ocr_text"] = ""
         st.session_state["selected_diagnosis_id"] = None
+        st.session_state["selected_chat_id"] = None
+        st.session_state["page"] = "Dashboard"
         st.rerun()
 
-records = list_diagnoses(100)
+records = (
+    st.session_state.get("demo_records", [])
+    if st.session_state.get("demo_mode", False)
+    else list_diagnoses(100)
+)
 page = st.session_state["page"]
 
 if page == "Dashboard":
