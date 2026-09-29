@@ -464,31 +464,26 @@ def _history(records: list[dict[str, Any]]) -> None:
     m4.metric("Review required", review)
 
     st.markdown("### 🔎 Find a case by Case ID")
-    st.caption("Enter the exact Case ID shown on a saved diagnosis, then open that case.")
+    st.caption("Type the exact Case ID and press Enter to open it.")
 
-    f1, f2, f3, f4 = st.columns([2.2, 1.0, 1.0, 1.0])
+    f1, f2, f3 = st.columns([2.4, 1.1, 1.1])
 
     with f1:
         case_id_input = st.text_input(
             "Case ID",
-            placeholder="Example: 12",
+            placeholder="Enter Case ID and press Enter",
             label_visibility="collapsed",
             key="history_case_id",
         )
+
     with f2:
-        find_case = st.button(
-            "🔍 Find Case",
-            type="primary",
-            use_container_width=True,
-            key="history_find_case",
-        )
-    with f3:
         device_filter = st.selectbox(
             "Device",
             ["All"] + sorted({r["device"].title() for r in records}),
             key="history_device_filter",
         )
-    with f4:
+
+    with f3:
         severity_filter = st.selectbox(
             "Severity",
             ["All", "HIGH", "MEDIUM", "LOW", "UNKNOWN"],
@@ -501,11 +496,11 @@ def _history(records: list[dict[str, Any]]) -> None:
         key="history_status_filter",
     )
 
-    if find_case:
-        case_id_text = case_id_input.strip()
-        if not case_id_text:
-            st.warning("Enter a Case ID first.")
-        elif not case_id_text.isdigit():
+    # Streamlit text_input triggers a rerun when Enter is pressed.
+    # Search automatically whenever a non-empty Case ID is entered.
+    case_id_text = case_id_input.strip()
+    if case_id_text:
+        if not case_id_text.isdigit():
             st.warning("Case ID must be a number, for example 12.")
         else:
             requested_id = int(case_id_text)
@@ -513,7 +508,7 @@ def _history(records: list[dict[str, Any]]) -> None:
             if selected_case is None:
                 st.error(f"No saved case found with Case ID #{requested_id}.")
                 st.session_state["selected_diagnosis_id"] = None
-            else:
+            elif st.session_state.get("selected_diagnosis_id") != requested_id:
                 st.session_state["selected_diagnosis_id"] = requested_id
                 st.rerun()
 
