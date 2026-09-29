@@ -454,21 +454,31 @@ def _analytics(records: list[dict[str, Any]]) -> None:
 
     st.markdown("### ⚠️ How Serious Are the Problems?")
     st.caption(
-        "Risk scale: 0 = Zero Risk · 1–2 = Low Risk · "
-        "3–4 = Medium Risk · 5 = High Risk"
+        "Each device is shown on a fixed risk scale: 0 = Zero Risk · "
+        "1–2 = Low Risk · 3–4 = Medium Risk · 5 = High Risk. "
+        "The bar uses the highest saved risk level for that device."
     )
 
-    # Keep the risk scale fixed from 0 to 5. Existing diagnosis levels are
-    # shown at representative points on that fixed scale.
-    risk_scale = {
-        0: severity_counts.get("Unknown", 0),
-        1: severity_counts.get("Low", 0),
-        2: 0,
-        3: severity_counts.get("Medium", 0),
-        4: 0,
-        5: severity_counts.get("High", 0),
+    # X-axis = device. Y-axis = fixed risk score from 0 to 5.
+    # Map the existing diagnosis severity labels to the requested scale.
+    severity_to_risk = {
+        "UNKNOWN": 0,
+        "LOW": 1,
+        "MEDIUM": 3,
+        "HIGH": 5,
     }
-    st.bar_chart(risk_scale, x_label="Risk level (0–5)", y_label="Number of cases")
+    device_risk = {device: 0 for device in DEVICE_OPTIONS}
+    for record in records:
+        device = record["device"].title()
+        risk = severity_to_risk.get(record["severity"].upper(), 0)
+        device_risk[device] = max(device_risk.get(device, 0), risk)
+
+    st.bar_chart(
+        device_risk,
+        x_label="Device",
+        y_label="Risk level (0–5)",
+        height=320,
+    )
 
     st.markdown("### 🔍 How Sure Is the AI?")
     q1, q2, q3 = st.columns(3)
