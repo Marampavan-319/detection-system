@@ -802,7 +802,7 @@ def _ai_detector() -> None:
     st.markdown("### ✨ New Chat")
     st.caption("Start a fresh diagnostic case using one or more evidence images.")
 
-with st.sidebar:
+    with st.sidebar:
         st.header("Analysis Settings")
         device = st.selectbox("Device category", DEVICE_OPTIONS)
         mode = st.radio(
