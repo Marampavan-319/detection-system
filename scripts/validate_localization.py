@@ -16,7 +16,7 @@ def main() -> None:
             "component": "shorted region",
             "subsystem": "PCB interconnect",
             "confidence": 0.91,
-            "bbox": [100, 50, 300, 250],
+            "bbox": [350, 350, 650, 650],
         },
         {
             "device": "pcb",
@@ -31,10 +31,10 @@ def main() -> None:
     results = localize_defects(matches, image_width=1000, image_height=1000)
 
     assert len(results) == 2
-    assert results[0]["normalized_bbox"] == [0.1, 0.05, 0.3, 0.25]
-    assert results[0]["center"] == [200.0, 150.0]
+    assert results[0]["normalized_bbox"] == [0.35, 0.35, 0.65, 0.65]
+    assert results[0]["center"] == [500.0, 500.0]
     assert results[0]["region"] == "middle-center"
-    assert abs(results[0]["area_ratio"] - 0.04) < 1e-9
+    assert abs(results[0]["area_ratio"] - 0.09) < 1e-9
     assert results[1]["region"] == "middle-right"
 
     print("Defect localization validated.")
