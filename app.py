@@ -919,168 +919,166 @@ def _ai_detector() -> None:
 
 
 
-# --- Professional HOGWARTS LEGACY theme ---
+# --- Professional HOGWARTS LEGACY light theme ---
 st.markdown(
     """
     <style>
     :root {
-        --hogwarts-bg: #0b1020;
-        --hogwarts-panel: #121a2b;
-        --hogwarts-panel-2: #172238;
-        --hogwarts-border: rgba(148, 163, 184, 0.18);
-        --hogwarts-text: #eef2ff;
-        --hogwarts-muted: #a9b4c7;
-        --hogwarts-accent: #8b5cf6;
-        --hogwarts-accent-2: #38bdf8;
+        --hogwarts-bg: #f5f9ff;
+        --hogwarts-panel: #ffffff;
+        --hogwarts-panel-2: #eef6ff;
+        --hogwarts-border: #d9e7f5;
+        --hogwarts-text: #18324a;
+        --hogwarts-muted: #64748b;
+        --hogwarts-blue: #2563eb;
+        --hogwarts-blue-light: #dbeafe;
+        --hogwarts-green: #16a34a;
+        --hogwarts-green-light: #dcfce7;
     }
 
     .stApp {
-        background:
-            radial-gradient(circle at 85% 8%, rgba(139, 92, 246, .16), transparent 28%),
-            radial-gradient(circle at 10% 30%, rgba(56, 189, 248, .08), transparent 24%),
-            linear-gradient(135deg, #080d1a 0%, #0b1020 48%, #10182a 100%);
+        background: linear-gradient(135deg, #f7fbff 0%, #eef7ff 55%, #f0fdf4 100%);
         color: var(--hogwarts-text);
     }
 
     [data-testid="stHeader"] {
-        background: rgba(8, 13, 26, .72);
-        backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.92);
+        border-bottom: 1px solid var(--hogwarts-border);
     }
 
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0a0f1d 0%, #111827 100%);
+        background: #ffffff;
         border-right: 1px solid var(--hogwarts-border);
     }
 
-    [data-testid="stSidebar"] > div:first-child {
-        padding-top: 1.2rem;
-    }
-
-    [data-testid="stSidebar"] button {
-        border-radius: 10px;
-        border: 1px solid transparent;
-        transition: all .2s ease;
-    }
-
-    [data-testid="stSidebar"] button:hover {
-        border-color: rgba(139, 92, 246, .45);
-        background: rgba(139, 92, 246, .12);
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span {
+        color: var(--hogwarts-text);
     }
 
     .block-container {
         max-width: 1450px;
-        padding-top: 2.2rem;
+        padding-top: 2rem;
         padding-bottom: 3rem;
     }
 
-    h1, h2, h3, h4 {
-        color: #f8fafc !important;
-        letter-spacing: -.02em;
+    h1, h2, h3 {
+        color: #173b63 !important;
+        letter-spacing: -0.02em;
     }
 
-    p, label, [data-testid="stCaptionContainer"] {
+    p, label, .stCaption {
         color: var(--hogwarts-muted);
     }
 
-    [data-testid="stMetric"] {
-        background: linear-gradient(145deg, rgba(23, 34, 56, .92), rgba(18, 26, 43, .92));
-        border: 1px solid var(--hogwarts-border);
+    .hogwarts-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+        padding: 10px 16px;
+        width: fit-content;
+        border: 1px solid #bfdbfe;
         border-radius: 14px;
-        padding: 14px 16px;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+        background: linear-gradient(90deg, #eff6ff, #f0fdf4);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
     }
 
-    [data-testid="stMetricValue"] {
-        color: #f8fafc !important;
+    .hogwarts-brand .crest {
+        font-size: 22px;
+    }
+
+    .hogwarts-brand .name {
+        font-size: 18px;
+        font-weight: 800;
+        color: #1d4ed8;
+        letter-spacing: 0.04em;
+    }
+
+    .hogwarts-brand .edition {
+        padding: 3px 8px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    [data-testid="stMetric"] {
+        background: #ffffff;
+        border: 1px solid var(--hogwarts-border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 5px 18px rgba(30, 64, 175, 0.07);
     }
 
     [data-testid="stMetricLabel"] {
-        color: #a9b4c7 !important;
+        color: #64748b !important;
     }
 
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(18, 26, 43, .72);
-        border-color: var(--hogwarts-border) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, .14);
+    [data-testid="stMetricValue"] {
+        color: #174a7c !important;
     }
 
     .stButton > button {
         border-radius: 10px;
-        border: 1px solid rgba(148, 163, 184, .22);
-        background: rgba(23, 34, 56, .9);
-        color: #eef2ff;
+        border: 1px solid #bfdbfe;
+        background: #ffffff;
+        color: #1e40af;
         font-weight: 600;
-        transition: all .2s ease;
+        transition: all 0.2s ease;
     }
 
     .stButton > button:hover {
-        border-color: rgba(139, 92, 246, .7);
-        color: white;
-        transform: translateY(-1px);
+        border-color: #60a5fa;
+        background: #eff6ff;
+        color: #1d4ed8;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
     }
 
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #7c3aed, #2563eb);
-        border: none;
+        background: linear-gradient(90deg, #2563eb, #16a34a);
         color: white;
+        border: none;
     }
 
-    input, textarea, [data-baseweb="select"] > div {
-        background-color: #111827 !important;
-        color: #f8fafc !important;
-        border-color: rgba(148, 163, 184, .24) !important;
+    .stTextInput > div > div,
+    .stSelectbox > div > div,
+    .stMultiSelect > div > div,
+    .stTextArea > div > div {
+        background: #ffffff;
+        border-color: #cbdff2;
+        border-radius: 10px;
     }
 
-    [data-testid="stFileUploaderDropzone"] {
-        background: rgba(17, 24, 39, .78);
-        border: 1px dashed rgba(139, 92, 246, .45);
+    [data-testid="stFileUploader"] {
+        background: #ffffff;
+        border: 1px dashed #93c5fd;
         border-radius: 14px;
+        padding: 8px;
     }
 
     [data-testid="stExpander"] {
-        background: rgba(18, 26, 43, .72);
+        background: #ffffff;
         border: 1px solid var(--hogwarts-border);
         border-radius: 12px;
     }
 
     hr {
-        border-color: var(--hogwarts-border) !important;
+        border-color: #dbe7f3;
     }
 
-    .hogwarts-brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        margin: 0 0 24px 0;
-        padding: 9px 15px;
-        border: 1px solid rgba(139, 92, 246, .28);
+    .stAlert {
         border-radius: 12px;
-        background: linear-gradient(135deg, rgba(139, 92, 246, .13), rgba(56, 189, 248, .08));
-        box-shadow: 0 8px 30px rgba(0, 0, 0, .18);
-    }
-
-    .hogwarts-brand .crest {
-        font-size: 20px;
-    }
-
-    .hogwarts-brand .name {
-        color: #f8fafc;
-        font-size: 15px;
-        font-weight: 800;
-        letter-spacing: .12em;
-    }
-
-    .hogwarts-brand .edition {
-        color: #9ca3af;
-        font-size: 11px;
-        letter-spacing: .08em;
-        text-transform: uppercase;
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
+
 
 st.set_page_config(
     page_title="ElectroDiagnose",
