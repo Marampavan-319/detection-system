@@ -1084,6 +1084,12 @@ st.markdown(
         box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
     }
 
+    /* Center Login / Create Account options within their row */
+    div[data-testid="stRadio"] > div {
+        justify-content: center !important;
+        width: 100%;
+    }
+
     /* Center both authentication forms as clean, consistent cards */
     div[data-testid="stForm"]:has(input[aria-label="Full Name"]),
     div[data-testid="stForm"]:has(input[aria-label="Email"]) {
