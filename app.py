@@ -6,12 +6,13 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
+import sqlite3
 
 import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 
 from src.components import identify_components
-from src.database import get_diagnosis, list_diagnoses, save_diagnosis
+from src.database import authenticate_user, create_user, get_diagnosis, get_user, list_diagnoses, save_diagnosis, update_user
 from src.diagnosis import diagnose
 from src.localization import localize_defects
 from src.reasoning import reason_about_evidence
@@ -801,7 +802,11 @@ def _ai_detector() -> None:
     st.markdown("### ✨ New Chat")
     st.caption("Start a fresh diagnostic case using one or more evidence images.")
 
-    with st.sidebar:
+    if not st.session_state["authenticated"]:
+    _login_screen()
+    st.stop()
+
+with st.sidebar:
         st.header("Analysis Settings")
         device = st.selectbox("Device category", DEVICE_OPTIONS)
         mode = st.radio(
@@ -918,6 +923,84 @@ def _ai_detector() -> None:
 
 
 
+
+def _login_screen() -> None:
+    """Render login and account creation before exposing the application."""
+    st.markdown(
+        '<div class="login-shell"><div class="login-card">'+
+        '<div class="login-event">⚡ HOGWARTS LEGACY <span>5.0</span></div>'+
+        '<div class="login-title">Welcome to ElectroDiagnose</div>'+
+        '<div class="login-subtitle">AI-powered defect analysis for devices and electronics</div>'+
+        '</div></div>',
+        unsafe_allow_html=True,
+    )
+
+    if "auth_mode" not in st.session_state:
+        st.session_state["auth_mode"] = "Login"
+    mode = st.radio("Account", ["Login", "Create Account"], horizontal=True, label_visibility="collapsed")
+    st.session_state["auth_mode"] = mode
+
+    if mode == "Login":
+        with st.form("login_form"):
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            submitted = st.form_submit_button("🔐 Login", use_container_width=True, type="primary")
+        if submitted:
+            if not email.strip() or not password:
+                st.error("Please enter your email and password.")
+            else:
+                user = authenticate_user(email, password)
+                if user is None:
+                    st.error("Email or password is incorrect.")
+                else:
+                    st.session_state["authenticated"] = True
+                    st.session_state["user"] = user
+                    st.session_state["page"] = "Dashboard"
+                    st.session_state["profile_name"] = user["name"]
+                    st.session_state["profile_role"] = user["role"]
+                    st.session_state["profile_number"] = user["phone"]
+                    st.session_state["profile_email"] = user["email"]
+                    st.rerun()
+    else:
+        with st.form("create_account_form"):
+            name = st.text_input("Full Name")
+            role = st.text_input("Role")
+            phone = st.text_input("Phone Number")
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            confirm = st.text_input("Confirm Password", type="password")
+            submitted = st.form_submit_button("Create Account", use_container_width=True, type="primary")
+        if submitted:
+            if not all([name.strip(), role.strip(), phone.strip(), email.strip(), password, confirm]):
+                st.error("Please fill in all required fields.")
+            elif "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+                st.error("Please enter a valid email address.")
+            elif len(password) < 6:
+                st.error("Password must contain at least 6 characters.")
+            elif password != confirm:
+                st.error("Passwords do not match.")
+            else:
+                try:
+                    user_id = create_user(name, role, phone, email, password)
+                except sqlite3.IntegrityError:
+                    st.error("An account with this email already exists.")
+                else:
+                    user = get_user(user_id)
+                    st.session_state["authenticated"] = True
+                    st.session_state["user"] = user
+                    st.session_state["page"] = "Dashboard"
+                    st.session_state["profile_name"] = user["name"]
+                    st.session_state["profile_role"] = user["role"]
+                    st.session_state["profile_number"] = user["phone"]
+                    st.session_state["profile_email"] = user["email"]
+                    st.rerun()
+
+st.set_page_config(
+    page_title="ElectroDiagnose",
+    page_icon="🔧",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 # --- Professional HOGWARTS LEGACY light theme ---
 st.markdown(
@@ -1124,19 +1207,16 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-
 st.markdown(
     '<div class="hogwarts-global-brand"><span class="crest">⚡</span><span class="name">HOGWARTS LEGACY</span><span class="edition">5.0</span></div>',
     unsafe_allow_html=True,
 )
 
-st.set_page_config(
-    page_title="ElectroDiagnose",
-    page_icon="🔧",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+
+if "authenticated" not in st.session_state:
+    st.session_state["authenticated"] = False
+if "user" not in st.session_state:
+    st.session_state["user"] = None
 
 if "latest_result" not in st.session_state:
     st.session_state["latest_result"] = None
@@ -1167,9 +1247,11 @@ with st.sidebar:
             st.rerun()
     st.divider()
     if st.button("🚪 Logout", use_container_width=True):
+        st.session_state["authenticated"] = False
+        st.session_state["user"] = None
         st.session_state["page"] = "Dashboard"
         st.session_state["selected_diagnosis_id"] = None
-        st.info("Login/logout authentication will be connected in the next remodel step.")
+        st.rerun()
 
 records = list_diagnoses(100)
 page = st.session_state["page"]
