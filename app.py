@@ -5,7 +5,6 @@ from __future__ import annotations
 from io import BytesIO
 from typing import Any
 
-import plotly.express as px
 import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 
@@ -240,6 +239,51 @@ def _show_saved_diagnosis(selected_id: int) -> None:
             st.write(f"• {item}")
 
 
+
+
+def _render_pie_chart(counts: dict[str, int], title: str) -> None:
+    """Render a lightweight donut chart without pandas/Plotly dependencies."""
+    total = sum(counts.values())
+    if total <= 0:
+        st.info("No data available.")
+        return
+
+    palette = ["#4F46E5", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"]
+    stops = []
+    legend = []
+    start = 0.0
+
+    for index, (label, value) in enumerate(counts.items()):
+        percent = (value / total) * 100
+        end = start + percent
+        color = palette[index % len(palette)]
+        stops.append(f"{color} {start:.2f}% {end:.2f}%")
+        legend.append(
+            f'<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">'
+            f'<span style="width:12px;height:12px;border-radius:50%;background:{color};display:inline-block;"></span>'
+            f'<span>{label}: {value} ({percent:.0f}%)</span></div>'
+        )
+        start = end
+
+    chart = (
+        '<div style="display:flex;align-items:center;gap:28px;'
+        'padding:18px;border:1px solid rgba(128,128,128,.25);'
+        'border-radius:12px;margin:8px 0 18px 0;">'
+        f'<div style="width:190px;height:190px;border-radius:50%;'
+        f'background:conic-gradient({", ".join(stops)});'
+        'display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+        '<div style="width:105px;height:105px;border-radius:50%;'
+        'background:var(--background-color,#fff);display:flex;'
+        'align-items:center;justify-content:center;text-align:center;'
+        'font-weight:700;font-size:15px;">'
+        f'{total}<br><span style="font-size:11px;font-weight:400;">total cases</span>'
+        '</div></div>'
+        f'<div><div style="font-size:18px;font-weight:700;margin-bottom:8px;">{title}</div>'
+        + "".join(legend)
+        + "</div></div>"
+    )
+    st.markdown(chart, unsafe_allow_html=True)
+
 def _dashboard(records: list[dict[str, Any]]) -> None:
     st.title("👋 Welcome to ElectroDiagnose")
     st.caption("AI-assisted visual and multimodal diagnostic dashboard")
@@ -279,14 +323,7 @@ def _dashboard(records: list[dict[str, Any]]) -> None:
         for record in records:
             name = record["device"].title()
             device_counts[name] = device_counts.get(name, 0) + 1
-        fig = px.pie(
-            values=list(device_counts.values()),
-            names=list(device_counts.keys()),
-            hole=0.45,
-            title="Share of saved cases by device",
-        )
-        fig.update_layout(height=360, margin=dict(l=10, r=10, t=55, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        _render_pie_chart(device_counts, "Share of saved cases by device")
         st.caption("This chart shows the share of saved cases by device, not the percentage of devices that are defective.")
     else:
         st.info("Save a diagnosis to populate dashboard analytics.")
@@ -329,13 +366,9 @@ def _analytics(records: list[dict[str, Any]]) -> None:
 
     a1, a2 = st.columns(2)
     with a1:
-        fig = px.pie(values=list(device_counts.values()), names=list(device_counts.keys()), hole=0.45, title="Cases by device")
-        fig.update_layout(height=360, margin=dict(l=10, r=10, t=55, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        _render_pie_chart(device_counts, "Cases by device")
     with a2:
-        fig = px.pie(values=list(status_counts.values()), names=list(status_counts.keys()), hole=0.45, title="Diagnostic status")
-        fig.update_layout(height=360, margin=dict(l=10, r=10, t=55, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        _render_pie_chart(status_counts, "Diagnostic status")
 
     st.markdown("### Severity distribution")
     st.bar_chart(severity_counts)
