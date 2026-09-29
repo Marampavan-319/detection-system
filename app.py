@@ -10,7 +10,7 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 
 from src.components import identify_components
-from src.database import list_diagnoses, save_diagnosis
+from src.database import get_diagnosis, list_diagnoses, save_diagnosis
 from src.report import generate_pdf_report
 from src.diagnosis import diagnose
 from src.localization import localize_defects
@@ -112,7 +112,7 @@ def draw_findings(image: Image.Image, locations: list[dict[str, Any]]) -> Image.
 
 
 def _render_history(container) -> None:
-    """Render the latest saved diagnoses into a reusable sidebar placeholder."""
+    """Render recent diagnoses with controls for opening saved records."""
     with container.container():
         st.markdown("**Recent diagnosis history**")
         records = list_diagnoses(5)
@@ -120,10 +120,15 @@ def _render_history(container) -> None:
             st.caption("No saved diagnoses yet.")
             return
         for record in records:
-            st.caption(
-                f"#{record['id']} · {record['device']} · "
-                f"{record['status']} · {record['confidence']:.0%}"
-            )
+            col_text, col_button = st.columns([3, 1])
+            with col_text:
+                st.caption(
+                    f"#{record['id']} · {record['device']} · "
+                    f"{record['status']} · {record['confidence']:.0%}"
+                )
+            with col_button:
+                if st.button("View", key=f"view_diagnosis_{record['id']}"):
+                    st.session_state["selected_diagnosis_id"] = record["id"]
 
 
 def _show_result(result: dict[str, Any], annotated: Image.Image, history_container) -> None:
@@ -243,6 +248,45 @@ with st.sidebar:
     history_container = st.empty()
 
 _render_history(history_container)
+
+selected_id = st.session_state.get("selected_diagnosis_id")
+if selected_id is not None:
+    selected = get_diagnosis(selected_id)
+    if selected is not None:
+        st.divider()
+        st.subheader(f"Saved Diagnosis #{selected['id']}")
+        sm1, sm2, sm3, sm4 = st.columns(4)
+        sm1.metric("Device", selected["device"])
+        sm2.metric("Confidence", f"{selected['confidence']:.0%}")
+        sm3.metric("Severity", selected["severity"])
+        sm4.metric("Priority", selected["priority"])
+        st.write(f"**Status:** {selected['status']}")
+        st.write(f"**Saved:** {selected['timestamp']}")
+        st.markdown("**Summary**")
+        st.write(selected["summary"])
+        st.markdown("**Findings**")
+        if selected["findings"]:
+            for finding in selected["findings"]:
+                st.write(
+                    f"• **{finding.get('defect', 'Unknown')}** → "
+                    f"{finding.get('component', 'Unknown')} "
+                    f"({finding.get('region', 'Unknown')}) · "
+                    f"{float(finding.get('confidence', 0)):.0%}"
+                )
+        else:
+            st.write("No localized findings.")
+        rc1, rc2 = st.columns(2)
+        with rc1:
+            st.markdown("**Possible causes**")
+            for cause in selected["possible_causes"]:
+                st.write(f"• {cause}")
+        with rc2:
+            st.markdown("**Recommended next actions**")
+            for action in selected["next_actions"]:
+                st.write(f"• {action}")
+        with st.expander("Safety limitations", expanded=False):
+            for item in selected["limitations"]:
+                st.write(f"• {item}")
 
 uploaded_files = st.file_uploader(
     "Upload device / component evidence",
