@@ -3,7 +3,11 @@ Convert a locally downloaded DeepPCB dataset to this project's YOLO format.
 
 No network access is used. No other GitHub repository is required.
 
-DeepPCB annotations are:
+This converter is intentionally robust to different local extraction layouts.
+It searches recursively for images and matching annotation .txt files instead
+of assuming a specific filename such as *_test.jpg.
+
+DeepPCB annotation format:
     x1,y1,x2,y2,type
 
 DeepPCB type IDs:
@@ -57,13 +61,15 @@ def args():
     return p.parse_args()
 
 
-def find_test_images(source: Path):
-    return sorted(
+def find_files(source: Path):
+    images = sorted(
         p for p in source.rglob("*")
-        if p.is_file()
-        and p.suffix.lower() in EXTENSIONS
-        and p.stem.endswith("_test")
+        if p.is_file() and p.suffix.lower() in EXTENSIONS
     )
+    labels = {}
+    for p in source.rglob("*.txt"):
+        labels.setdefault(p.stem.lower(), []).append(p)
+    return images, labels
 
 
 def split(items, seed):
@@ -73,6 +79,19 @@ def split(items, seed):
     a = int(n * 0.8)
     b = a + int(n * 0.1)
     return {"train": items[:a], "val": items[a:b], "test": items[b:]}
+
+
+def find_label(image: Path, labels_by_stem):
+    matches = labels_by_stem.get(image.stem.lower(), [])
+    if not matches:
+        return None
+
+    # Prefer an annotation file located in the same directory.
+    for candidate in matches:
+        if candidate.parent == image.parent:
+            return candidate
+
+    return matches[0]
 
 
 def convert_box(line, width, height):
@@ -107,14 +126,31 @@ def convert_box(line, width, height):
 def main():
     a = args()
     source = a.source if a.source.is_absolute() else ROOT / a.source
-    images = find_test_images(source)
+
+    images, labels_by_stem = find_files(source)
+
+    print(f"Images discovered: {len(images)}")
+    print(f"Annotation files discovered: {sum(len(v) for v in labels_by_stem.values())}")
 
     if not images:
-        print(f"No *_test images found under {source}")
-        print("Check that the downloaded dataset has been extracted first.")
+        print(f"No supported images found under {source}")
         return
 
-    splits = split(images, a.seed)
+    labeled_images = []
+    for image in images:
+        label = find_label(image, labels_by_stem)
+        if label:
+            labeled_images.append((image, label))
+
+    print(f"Images with matching annotations: {len(labeled_images)}")
+
+    if not labeled_images:
+        print("No image/annotation pairs were found.")
+        print("The dataset may use a different annotation layout.")
+        print("Run the diagnostic command shown in the project instructions.")
+        return
+
+    splits = split(labeled_images, a.seed)
 
     for split_name, items in splits.items():
         (OUT / "images" / split_name).mkdir(parents=True, exist_ok=True)
@@ -123,12 +159,7 @@ def main():
         converted = 0
         skipped = 0
 
-        for src in items:
-            label_src = src.with_suffix(".txt")
-            if not label_src.exists():
-                skipped += 1
-                continue
-
+        for src, label_src in items:
             try:
                 with Image.open(src) as img:
                     width, height = img.size
@@ -137,7 +168,9 @@ def main():
                 continue
 
             labels = []
-            for line in label_src.read_text(encoding="utf-8", errors="ignore").splitlines():
+            for line in label_src.read_text(
+                encoding="utf-8", errors="ignore"
+            ).splitlines():
                 result = convert_box(line, width, height)
                 if result:
                     labels.append(result)
@@ -146,11 +179,21 @@ def main():
                 skipped += 1
                 continue
 
-            destination_image = OUT / "images" / split_name / src.name
-            destination_label = OUT / "labels" / split_name / f"{src.stem}.txt"
+            # Avoid collisions when different folders contain the same filename.
+            relative = src.relative_to(source)
+            safe_stem = "_".join(relative.with_suffix("").parts)
+
+            destination_image = (
+                OUT / "images" / split_name / f"{safe_stem}{src.suffix.lower()}"
+            )
+            destination_label = (
+                OUT / "labels" / split_name / f"{safe_stem}.txt"
+            )
 
             shutil.copy2(src, destination_image)
-            destination_label.write_text("\n".join(labels) + "\n", encoding="utf-8")
+            destination_label.write_text(
+                "\n".join(labels) + "\n", encoding="utf-8"
+            )
             converted += 1
 
         print(f"{split_name}: {converted} images converted, {skipped} skipped")
