@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.vscode/
+.idea/
+.streamlit/secrets.toml
+uploads/*
+outputs/*
+reports/*
+data/*.db
+models/*.pt
+models/*.onnx
+models/*.engine
+.DS_Store
+Thumbs.db
