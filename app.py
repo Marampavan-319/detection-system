@@ -892,7 +892,7 @@ elif page == "History":
 elif page == "Analytics":
     _analytics(records)
 elif page == "Profile":
-    _profile()
+    _profile(records)
 
 st.divider()
 st.caption(
