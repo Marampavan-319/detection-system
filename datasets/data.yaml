@@ -1,0 +1,19 @@
+path: ./datasets/electronics
+
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: laptop_hinge_damage
+  1: laptop_screen_crack
+  2: laptop_port_damage
+  3: smartphone_screen_crack
+  4: smartphone_camera_damage
+  5: smartphone_charging_port_damage
+  6: pcb_burn_mark
+  7: pcb_corrosion
+  8: pcb_damaged_connector
+  9: router_lan_port_damage
+  10: router_antenna_damage
+  11: router_casing_damage
