@@ -94,7 +94,7 @@ Implemented `src/components.py` to map detector classes into device components a
 Implemented `src/localization.py` to convert component matches into structured visible-defect locations. Each localization preserves the image-space bounding box and confidence while adding the defect center, normalized bounding box, bounding-box area ratio, and a coarse image region such as `middle-center` or `middle-right`. Coordinates are clipped to the image dimensions so downstream modules receive safe, consistent geometry. `scripts/validate_localization.py` provides a deterministic smoke test.
 
 ### Step 7 — Multimodal reasoning
-Combine visual findings, OCR/error screenshots, and optional symptoms.
+Implemented `src/reasoning.py` to combine structured visual/localization findings, OCR or error-screen text, and optional user symptoms into an evidence-based reasoning result. The module produces observations, possible causes, next actions, and explicit limitations without claiming that visible evidence proves an internal electrical fault. `scripts/validate_reasoning.py` provides a deterministic smoke test.
 
 ### Step 8 — Severity and confidence
 Generate structured confidence, severity, and recommendation values.
