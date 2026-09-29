@@ -1,0 +1,5 @@
+# Session 4 inference defaults.
+model: yolo11n.pt
+confidence: 0.25
+iou: 0.45
+device: null
