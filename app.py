@@ -933,8 +933,8 @@ def _login_screen() -> None:
 
     if "auth_mode" not in st.session_state:
         st.session_state["auth_mode"] = "Login"
-    mode = st.radio("Account", ["Login", "Create Account"], horizontal=True, label_visibility="collapsed")
-    st.session_state["auth_mode"] = mode
+
+    mode = st.session_state["auth_mode"]
 
     if mode == "Login":
         with st.form("login_form"):
@@ -957,6 +957,10 @@ def _login_screen() -> None:
                     st.session_state["profile_number"] = user["phone"]
                     st.session_state["profile_email"] = user["email"]
                     st.rerun()
+
+        if st.button("Create Account", use_container_width=True, key="switch_to_create"):
+            st.session_state["auth_mode"] = "Create Account"
+            st.rerun()
     else:
         with st.form("create_account_form"):
             name = st.text_input("Full Name")
@@ -990,6 +994,10 @@ def _login_screen() -> None:
                     st.session_state["profile_number"] = user["phone"]
                     st.session_state["profile_email"] = user["email"]
                     st.rerun()
+
+        if st.button("Login", use_container_width=True, key="switch_to_login"):
+            st.session_state["auth_mode"] = "Login"
+            st.rerun()
 
 st.set_page_config(
     page_title="ElectroDiagnose",
@@ -1082,26 +1090,6 @@ st.markdown(
         border-radius: 22px;
         background: rgba(255, 255, 255, 0.97);
         box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
-    }
-
-    /* Center Login / Create Account options within the same row */
-    div[data-testid="stRadio"] {
-        width: 100%;
-        display: flex;
-        justify-content: center !important;
-    }
-
-    div[data-testid="stRadio"] > div {
-        width: 100%;
-        display: flex;
-        justify-content: center !important;
-    }
-
-    div[data-testid="stRadio"] [role="radiogroup"] {
-        width: 100%;
-        display: flex !important;
-        justify-content: center !important;
-        gap: 28px;
     }
 
     /* Center both authentication forms as clean, consistent cards */
