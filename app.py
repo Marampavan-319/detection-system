@@ -238,6 +238,16 @@ def _show_saved_diagnosis(selected_id: int) -> None:
         for item in selected["limitations"]:
             st.write(f"• {item}")
 
+    pdf_bytes = generate_pdf_report(selected)
+    st.download_button(
+        "PDF report",
+        data=pdf_bytes,
+        file_name=f"electrodiagnose_report_{selected['id']}.pdf",
+        mime="application/pdf",
+        use_container_width=True,
+        key=f"saved_pdf_{selected['id']}",
+    )
+
 
 
 
@@ -419,7 +429,51 @@ def _profile() -> None:
 
 def _ai_detector() -> None:
     st.title("🤖 AI Detector")
-    st.caption("Run a new evidence-based diagnostic analysis.")
+    st.caption("Manage diagnostic conversations and run new evidence-based analyses.")
+
+    chat_mode = st.radio(
+        "AI Detector",
+        ["New Chat", "Old Chats"],
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+    if chat_mode == "Old Chats":
+        st.markdown("### 💬 Old Chats")
+        st.caption("Previously saved diagnostic cases. Open any case to review the complete result.")
+
+        records = list_diagnoses(100)
+        if not records:
+            st.info("No old chats yet. Start a New Chat and save a diagnosis.")
+            return
+
+        selected_chat_id = st.session_state.get("selected_chat_id")
+        if selected_chat_id is not None:
+            selected = get_diagnosis(selected_chat_id)
+            if selected is not None:
+                if st.button("← Back to Old Chats", key="old_chats_back"):
+                    st.session_state["selected_chat_id"] = None
+                    st.rerun()
+                _show_saved_diagnosis(selected_chat_id)
+                return
+            st.session_state["selected_chat_id"] = None
+
+        for record in records:
+            with st.container(border=True):
+                c1, c2, c3, c4 = st.columns([1.0, 1.4, 2.0, 1.0])
+                c1.write(f"**Chat #{record['id']}**")
+                c2.write(record["device"].title())
+                c3.write(
+                    f"{record['status'].replace('_', ' ').title()} · "
+                    f"{record['severity']} · {record['confidence']:.0%}"
+                )
+                if c4.button("Open", key=f"old_chat_{record['id']}"):
+                    st.session_state["selected_chat_id"] = record["id"]
+                    st.rerun()
+        return
+
+    st.markdown("### ✨ New Chat")
+    st.caption("Start a fresh diagnostic case using one or more evidence images.")
 
     with st.sidebar:
         st.header("Analysis Settings")
@@ -429,7 +483,9 @@ def _ai_detector() -> None:
             ["Pipeline demo", "YOLO model"],
             help="Pipeline demo uses deterministic sample detections for a reliable presentation. YOLO model runs the configured Ultralytics model.",
         )
-        model_path = st.text_input("YOLO model path", value="yolo11n.pt", disabled=mode != "YOLO model")
+        model_path = st.text_input(
+            "YOLO model path", value="yolo11n.pt", disabled=mode != "YOLO model"
+        )
         confidence = st.slider("Detection confidence", 0.05, 0.95, 0.25, 0.05)
         iou = st.slider("IoU threshold", 0.10, 0.90, 0.45, 0.05)
         st.divider()
@@ -459,7 +515,9 @@ def _ai_detector() -> None:
             height=120,
         )
 
-    analyze = st.button("🔍 Analyze Evidence", type="primary", use_container_width=True)
+    analyze = st.button(
+        "🔍 Analyze Evidence", type="primary", use_container_width=True, key="new_chat_analyze"
+    )
 
     if analyze:
         if not uploaded_files:
@@ -471,7 +529,9 @@ def _ai_detector() -> None:
 
             progress = st.progress(0.0, text="Preparing evidence...")
             for index, uploaded in enumerate(uploaded_files, start=1):
-                image = ImageOps.exif_transpose(Image.open(BytesIO(uploaded.getvalue()))).convert("RGB")
+                image = ImageOps.exif_transpose(
+                    Image.open(BytesIO(uploaded.getvalue()))
+                ).convert("RGB")
                 last_image = image
 
                 if mode == "Pipeline demo":
@@ -481,35 +541,29 @@ def _ai_detector() -> None:
                         detections = _run_yolo(device, image, model_path, confidence, iou)
 
                 result = analyze_evidence(
-                    device=device,
-                    image=image,
-                    detections=detections,
-                    ocr_text=ocr_text,
-                    symptoms=symptoms,
+                    device=device, image=image, detections=detections,
+                    ocr_text=ocr_text, symptoms=symptoms,
                 )
                 all_detections.extend(result["detections"])
                 all_locations.extend(result["locations"])
-                progress.progress(index / len(uploaded_files), text=f"Processed {index}/{len(uploaded_files)} evidence image(s)")
+                progress.progress(
+                    index / len(uploaded_files),
+                    text=f"Processed {index}/{len(uploaded_files)} evidence image(s)",
+                )
 
             if last_image is not None:
                 combined_reasoning = reason_about_evidence(
-                    device=device,
-                    locations=all_locations,
-                    ocr_text=ocr_text,
-                    symptoms=symptoms,
+                    device=device, locations=all_locations,
+                    ocr_text=ocr_text, symptoms=symptoms,
                 )
                 combined_severity = score_severity(all_locations, combined_reasoning)
                 combined_diagnosis = diagnose(
-                    device=device,
-                    locations=all_locations,
-                    reasoning=combined_reasoning,
-                    severity=combined_severity,
+                    device=device, locations=all_locations,
+                    reasoning=combined_reasoning, severity=combined_severity,
                 )
                 combined = {
-                    "detections": all_detections,
-                    "locations": all_locations,
-                    "reasoning": combined_reasoning,
-                    "severity": combined_severity,
+                    "detections": all_detections, "locations": all_locations,
+                    "reasoning": combined_reasoning, "severity": combined_severity,
                     "diagnosis": combined_diagnosis,
                 }
                 annotated = draw_findings(last_image, all_locations)
@@ -521,11 +575,8 @@ def _ai_detector() -> None:
                 st.session_state["latest_annotated"] = annotated
 
     if st.session_state["latest_result"] is not None and st.session_state["latest_annotated"] is not None:
-        _show_result(
-            st.session_state["latest_result"],
-            st.session_state["latest_annotated"],
-            history_container,
-        )
+        _show_result(st.session_state["latest_result"], st.session_state["latest_annotated"], history_container)
+
 
 
 st.set_page_config(
