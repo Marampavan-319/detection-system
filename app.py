@@ -421,9 +421,9 @@ def _analytics(records: list[dict[str, Any]]) -> None:
         st.info("No saved diagnoses yet. Run and save a diagnosis to see analytics.")
         return
 
-    status_counts = {}
-    device_counts = {}
-    severity_counts = {}
+    status_counts: dict[str, int] = {}
+    device_counts: dict[str, int] = {}
+    severity_counts: dict[str, int] = {}
     for record in records:
         status = record["status"].replace("_", " ").title()
         device = record["device"].title()
@@ -432,15 +432,54 @@ def _analytics(records: list[dict[str, Any]]) -> None:
         device_counts[device] = device_counts.get(device, 0) + 1
         severity_counts[severity] = severity_counts.get(severity, 0) + 1
 
+    total = len(records)
+    defects = status_counts.get("Defect Detected", 0)
+    high = severity_counts.get("High", 0)
+    review = sum(bool(r["review_required"]) for r in records)
+    avg_confidence = sum(float(r["confidence"]) for r in records) / total
+
+    st.markdown("### 📌 Overview")
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Total Cases", total)
+    k2.metric("Defects Detected", defects)
+    k3.metric("High Severity", high)
+    k4.metric("Avg. Confidence", f"{avg_confidence:.0%}")
+
+    st.markdown("### 📈 Case Insights")
     a1, a2 = st.columns(2)
     with a1:
         _render_pie_chart(device_counts, "Cases by device")
     with a2:
         _render_pie_chart(status_counts, "Diagnostic status")
 
-    st.markdown("### Severity distribution")
-    st.bar_chart(severity_counts)
-    st.caption("Analytics are based only on saved diagnoses currently stored in the local SQLite database.")
+    st.markdown("### ⚠️ Severity Distribution")
+    severity_order = ["High", "Medium", "Low", "Unknown"]
+    ordered_severity = {
+        key: severity_counts[key]
+        for key in severity_order
+        if key in severity_counts
+    }
+    st.bar_chart(ordered_severity)
+
+    st.markdown("### 🔍 Diagnostic Quality")
+    q1, q2, q3 = st.columns(3)
+    q1.metric("Average Confidence", f"{avg_confidence:.0%}")
+    q2.metric("Review Required", review)
+    q3.metric("Insufficient Evidence", status_counts.get("Insufficient Evidence", 0))
+
+    st.markdown("### 🕘 Recent Cases")
+    for record in records[:5]:
+        status_label = record["status"].replace("_", " ").title()
+        saved_time = record["timestamp"].replace("T", " ")[:19]
+        st.write(
+            f"**Case #{record['id']}** · {record['device'].title()} · "
+            f"{status_label} · {record['confidence']:.0%} · "
+            f"{record['severity']} · {saved_time} UTC"
+        )
+
+    st.caption(
+        "Analytics are based only on saved diagnoses currently stored in the local SQLite database."
+    )
 
 
 def _history(records: list[dict[str, Any]]) -> None:
