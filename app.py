@@ -451,7 +451,21 @@ def _history(records: list[dict[str, Any]]) -> None:
         st.info("No saved diagnoses yet. Run and save a diagnosis from AI Detector.")
         return
 
-    # Summary metrics for the currently loaded history.
+    selected_id = st.session_state.get("selected_diagnosis_id")
+
+    # Case-detail mode: show only the selected case.
+    # The full history list stays hidden until the user presses the back arrow.
+    if selected_id is not None:
+        top_back, _ = st.columns([0.15, 0.85])
+        with top_back:
+            if st.button("←", key="history_back", help="Back to all cases"):
+                st.session_state["selected_diagnosis_id"] = None
+                st.session_state["history_case_id"] = ""
+                st.rerun()
+        _show_saved_diagnosis(selected_id)
+        return
+
+    # Summary metrics for the full history list.
     total = len(records)
     defects = sum(r["status"] == "DEFECT_DETECTED" for r in records)
     high = sum(r["severity"] == "HIGH" for r in records)
@@ -523,14 +537,6 @@ def _history(records: list[dict[str, Any]]) -> None:
         filtered.append(record)
 
     st.caption(f"Showing {len(filtered)} of {total} saved case(s).")
-
-    selected_id = st.session_state.get("selected_diagnosis_id")
-    if selected_id is not None:
-        if st.button("← Back to history list", key="history_back"):
-            st.session_state["selected_diagnosis_id"] = None
-            st.rerun()
-        _show_saved_diagnosis(selected_id)
-        st.divider()
 
     if not filtered:
         st.info("No cases match the current search and filters.")
