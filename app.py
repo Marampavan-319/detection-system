@@ -171,6 +171,9 @@ def _show_result(result: dict[str, Any], annotated: Image.Image) -> None:
     with st.expander("Safety limitations", expanded=False):
         for item in diagnosis["limitations"]:
             st.write(f"• {item}")
+    if st.button("Save diagnosis", key="save_diagnosis"):
+        record_id = save_diagnosis(diagnosis)
+        st.success(f"Diagnosis saved to history (ID {record_id}).")
 
 
 st.set_page_config(
