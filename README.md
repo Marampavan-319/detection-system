@@ -79,7 +79,7 @@ Runtime directories will be populated as the prototype is implemented.
 Repository, Streamlit starter UI, dependencies, and module scaffolding.
 
 ### Step 2 — Dataset preparation
-Collect and organize prototype images for laptops, smartphones, PCBs, and routers.
+Collect and organize prototype images for laptops, smartphones, PCBs, and routers. The repository now contains a local-only dataset manifest, unified YOLO class list, YOLO configuration, and a preparation script. The pipeline does not clone or depend on another GitHub repository.
 
 ### Step 3 — Image processing
 Implement image loading, validation, resizing, and preprocessing.
