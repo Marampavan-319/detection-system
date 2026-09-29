@@ -942,8 +942,19 @@ st.markdown(
     }
 
     [data-testid="stHeader"] {
-        background: rgba(255, 255, 255, 0.92);
-        border-bottom: 1px solid var(--hogwarts-border);
+        display: none !important;
+    }
+
+    [data-testid="stToolbar"] {
+        display: none !important;
+    }
+
+    #MainMenu {
+        visibility: hidden !important;
+    }
+
+    footer {
+        visibility: hidden !important;
     }
 
     [data-testid="stSidebar"] {
