@@ -941,6 +941,10 @@ def _login_screen() -> None:
             email = st.text_input("Email")
             password = st.text_input("Password", type="password")
             submitted = st.form_submit_button("🔐 Login", use_container_width=True, type="primary")
+            switch_to_create = st.form_submit_button("Create Account", use_container_width=True)
+        if switch_to_create:
+            st.session_state["auth_mode"] = "Create Account"
+            st.rerun()
         if submitted:
             if not email.strip() or not password:
                 st.error("Please enter your email and password.")
@@ -957,10 +961,6 @@ def _login_screen() -> None:
                     st.session_state["profile_number"] = user["phone"]
                     st.session_state["profile_email"] = user["email"]
                     st.rerun()
-
-        if st.button("Create Account", use_container_width=True, key="switch_to_create"):
-            st.session_state["auth_mode"] = "Create Account"
-            st.rerun()
     else:
         with st.form("create_account_form"):
             name = st.text_input("Full Name")
@@ -970,6 +970,10 @@ def _login_screen() -> None:
             password = st.text_input("Password", type="password")
             confirm = st.text_input("Confirm Password", type="password")
             submitted = st.form_submit_button("Create Account", use_container_width=True, type="primary")
+            switch_to_login = st.form_submit_button("Login", use_container_width=True)
+        if switch_to_login:
+            st.session_state["auth_mode"] = "Login"
+            st.rerun()
         if submitted:
             if not all([name.strip(), role.strip(), phone.strip(), email.strip(), password, confirm]):
                 st.error("Please fill in all required fields.")
@@ -994,10 +998,6 @@ def _login_screen() -> None:
                     st.session_state["profile_number"] = user["phone"]
                     st.session_state["profile_email"] = user["email"]
                     st.rerun()
-
-        if st.button("Login", use_container_width=True, key="switch_to_login"):
-            st.session_state["auth_mode"] = "Login"
-            st.rerun()
 
 st.set_page_config(
     page_title="ElectroDiagnose",
