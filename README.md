@@ -91,7 +91,7 @@ Implemented a lazy-loading Ultralytics YOLO inference wrapper in src/detection.p
 Implemented `src/components.py` to map detector classes into device components and subsystems for PCB, laptop, smartphone, and router categories. The mapping layer is explicit and deterministic, preserves detector confidence and bounding boxes, and falls back to unknown component/subsystem when a class is not mapped. `scripts/validate_components.py` validates the mapping independently of model inference.
 
 ### Step 6 — Defect localization
-Detect and annotate visible abnormalities.
+Implemented `src/localization.py` to convert component matches into structured visible-defect locations. Each localization preserves the image-space bounding box and confidence while adding the defect center, normalized bounding box, bounding-box area ratio, and a coarse image region such as `middle-center` or `middle-right`. Coordinates are clipped to the image dimensions so downstream modules receive safe, consistent geometry. `scripts/validate_localization.py` provides a deterministic smoke test.
 
 ### Step 7 — Multimodal reasoning
 Combine visual findings, OCR/error screenshots, and optional symptoms.
