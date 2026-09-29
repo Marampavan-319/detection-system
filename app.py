@@ -950,14 +950,14 @@ def _login_screen() -> None:
     mode = st.session_state["auth_mode"]
 
     if mode == "Login":
-        with st.form("login_form"):
-            email = st.text_input("Email")
-            password = st.text_input("Password", type="password")
-            submitted = st.form_submit_button("🔐 Login", use_container_width=True, type="primary")
-            switch_to_create = st.form_submit_button("Create Account", use_container_width=True)
-        
-        demo_col_left, demo_col, demo_col_right = st.columns([1.5, 1, 1.5])
-        with demo_col:
+        form_col_left, form_col, form_col_right = st.columns([1.5, 1, 1.5])
+        with form_col:
+            with st.form("login_form"):
+                email = st.text_input("Email")
+                password = st.text_input("Password", type="password")
+                submitted = st.form_submit_button("🔐 Login", use_container_width=True, type="primary")
+                switch_to_create = st.form_submit_button("Create Account", use_container_width=True)
+
             demo_login = st.button("🎯 Demo Account", use_container_width=True, key="demo_login")
         if demo_login:
             st.session_state["authenticated"] = True
@@ -996,15 +996,17 @@ def _login_screen() -> None:
                     st.session_state["profile_email"] = user["email"]
                     st.rerun()
     else:
-        with st.form("create_account_form"):
-            name = st.text_input("Full Name")
-            role = st.text_input("Role")
-            phone = st.text_input("Phone Number")
-            email = st.text_input("Email")
-            password = st.text_input("Password", type="password")
-            confirm = st.text_input("Confirm Password", type="password")
-            submitted = st.form_submit_button("Create Account", use_container_width=True, type="primary")
-            switch_to_login = st.form_submit_button("Login", use_container_width=True)
+        form_col_left, form_col, form_col_right = st.columns([1.5, 1, 1.5])
+        with form_col:
+            with st.form("create_account_form"):
+                name = st.text_input("Full Name")
+                role = st.text_input("Role")
+                phone = st.text_input("Phone Number")
+                email = st.text_input("Email")
+                password = st.text_input("Password", type="password")
+                confirm = st.text_input("Confirm Password", type="password")
+                submitted = st.form_submit_button("Create Account", use_container_width=True, type="primary")
+                switch_to_login = st.form_submit_button("Login", use_container_width=True)
         if switch_to_login:
             st.session_state["auth_mode"] = "Login"
             st.rerun()
@@ -1126,12 +1128,10 @@ st.markdown(
         box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
     }
 
-    /* Match both authentication forms to the width of the centered Demo Account button */
-    div[data-testid="stForm"]:has(input[aria-label="Full Name"]),
-    div[data-testid="stForm"]:has(input[aria-label="Email"]) {
+    /* Authentication forms share the exact same centered column as the Demo Account button. */
+    div[data-testid="stForm"] {
         width: 100%;
-        max-width: 365px;
-        margin: 28px auto 36px auto;
+        margin: 28px 0 20px 0;
         padding: 28px 30px 26px 30px;
         border: 1px solid #dbeafe;
         border-radius: 20px;
