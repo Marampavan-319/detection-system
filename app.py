@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from pathlib import Path
 from typing import Any
 
 import streamlit as st
@@ -119,7 +120,14 @@ def _render_history(container, limit: int = 5) -> None:
                     st.session_state["page"] = "History"
 
 
-def _show_result(result: dict[str, Any], annotated: Image.Image, history_container) -> None:
+def _show_result(
+    result: dict[str, Any],
+    annotated: Image.Image,
+    history_container,
+    evidence_images: list[Image.Image] | None = None,
+    symptoms: str = "",
+    ocr_text: str = "",
+) -> None:
     diagnosis = result["diagnosis"]
     severity = result["severity"]
     reasoning = result["reasoning"]
