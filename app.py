@@ -119,6 +119,7 @@ def _render_history(container) -> None:
         if not records:
             st.caption("No saved diagnoses yet.")
             return
+        render_token = st.session_state.get("history_render_token", 0)
         for record in records:
             col_text, col_button = st.columns([3, 1])
             with col_text:
@@ -127,7 +128,10 @@ def _render_history(container) -> None:
                     f"{record['status']} · {record['confidence']:.0%}"
                 )
             with col_button:
-                if st.button("View", key=f"view_diagnosis_{record['id']}"):
+                if st.button(
+                    "View",
+                    key=f"view_diagnosis_{record['id']}_{render_token}",
+                ):
                     st.session_state["selected_diagnosis_id"] = record["id"]
 
 
@@ -195,6 +199,7 @@ def _show_result(result: dict[str, Any], annotated: Image.Image, history_contain
     if st.button("Save diagnosis", key="save_diagnosis"):
         record_id = save_diagnosis(diagnosis)
         st.session_state["last_saved_diagnosis_id"] = record_id
+        st.session_state["history_render_token"] += 1
         st.success(f"Diagnosis saved to history (ID {record_id}).")
         _render_history(history_container)
 
@@ -222,6 +227,8 @@ if "latest_result" not in st.session_state:
     st.session_state["latest_result"] = None
 if "latest_annotated" not in st.session_state:
     st.session_state["latest_annotated"] = None
+if "history_render_token" not in st.session_state:
+    st.session_state["history_render_token"] = 0
 
 with st.sidebar:
     st.header("Analysis Settings")
