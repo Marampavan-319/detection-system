@@ -1,0 +1,12 @@
+broken
+crack
+scratch
+dent
+screen_damage
+missing_part
+open_circuit
+short_circuit
+mousebite
+spur
+pin_hole
+spurious_copper
