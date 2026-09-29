@@ -1084,10 +1084,24 @@ st.markdown(
         box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
     }
 
-    /* Center Login / Create Account options within their row */
-    div[data-testid="stRadio"] > div {
-        justify-content: center !important;
+    /* Center Login / Create Account options within the same row */
+    div[data-testid="stRadio"] {
         width: 100%;
+        display: flex;
+        justify-content: center !important;
+    }
+
+    div[data-testid="stRadio"] > div {
+        width: 100%;
+        display: flex;
+        justify-content: center !important;
+    }
+
+    div[data-testid="stRadio"] [role="radiogroup"] {
+        width: 100%;
+        display: flex !important;
+        justify-content: center !important;
+        gap: 28px;
     }
 
     /* Center both authentication forms as clean, consistent cards */
