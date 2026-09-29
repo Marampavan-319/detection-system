@@ -5,6 +5,7 @@ from __future__ import annotations
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
@@ -187,7 +188,7 @@ def _show_result(
             st.write(f"• {item}")
 
     if st.button("Save diagnosis", key="save_diagnosis"):
-        image_dir = Path("uploads") / "diagnoses" / str(st.session_state.get("pending_case_id", "new"))
+        image_dir = Path("uploads") / "diagnoses" / uuid4().hex
         image_dir.mkdir(parents=True, exist_ok=True)
 
         image_paths = []
