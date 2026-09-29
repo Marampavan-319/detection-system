@@ -97,7 +97,7 @@ Implemented `src/localization.py` to convert component matches into structured v
 Implemented `src/reasoning.py` to combine structured visual/localization findings, OCR or error-screen text, and optional user symptoms into an evidence-based reasoning result. The module produces observations, possible causes, next actions, and explicit limitations without claiming that visible evidence proves an internal electrical fault. `scripts/validate_reasoning.py` provides a deterministic smoke test.
 
 ### Step 8 — Severity and confidence
-Generate structured confidence, severity, and recommendation values.
+Implemented `src/severity.py` to convert localized visual evidence into deterministic confidence, severity, and priority values with an explainable rationale. The scorer can incorporate the structured reasoning evidence from Step 7 and explicitly distinguishes visible-risk scoring from proof of an internal electrical fault. `scripts/validate_severity.py` covers high, medium, empty-evidence, and router connection-state cases.
 
 ### Step 9 — Diagnostic result engine
 Create a consistent diagnostic response format.
