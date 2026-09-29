@@ -264,7 +264,34 @@ def _show_saved_diagnosis(selected_id: int) -> None:
         for action in selected["next_actions"]:
             st.write(f"• {action}")
 
-    with st.expander("Safety limitations", expanded=False):
+    with st.expander("Evidence & reasoning", expanded=True):
+        evidence = selected.get("evidence", {})
+        for item in evidence.get("evidence", []):
+            st.write(f"• {item}")
+        st.markdown("**Observations**")
+        for item in evidence.get("observations", []):
+            st.write(f"• {item}")
+        if evidence.get("symptoms"):
+            st.markdown("**Symptoms**")
+            st.write(evidence["symptoms"])
+        if evidence.get("ocr_text"):
+            st.markdown("**Error / OCR text**")
+            st.write(evidence["ocr_text"])
+
+    image_paths = selected.get("evidence", {}).get("images", [])
+    if image_paths:
+        st.markdown("**Evidence images**")
+        cols = st.columns(min(3, len(image_paths)))
+        for index, image_path in enumerate(image_paths):
+            path = Path(image_path)
+            if path.exists():
+                cols[index % len(cols)].image(
+                    str(path),
+                    caption="Annotated result" if path.name == "annotated.png" else f"Evidence {index + 1}",
+                    use_container_width=True,
+                )
+
+    with st.expander("Safety precautions & limitations", expanded=True):
         for item in selected["limitations"]:
             st.write(f"• {item}")
 
