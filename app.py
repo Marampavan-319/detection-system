@@ -974,6 +974,41 @@ st.markdown(
         color: var(--hogwarts-muted);
     }
 
+    .hogwarts-global-brand {
+        position: fixed;
+        top: 12px;
+        left: 18px;
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 8px 13px;
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.10);
+    }
+
+    .hogwarts-global-brand .crest {
+        font-size: 18px;
+    }
+
+    .hogwarts-global-brand .name {
+        font-size: 15px;
+        font-weight: 800;
+        color: #1d4ed8;
+        letter-spacing: 0.04em;
+    }
+
+    .hogwarts-global-brand .edition {
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
     .hogwarts-brand {
         display: flex;
         align-items: center;
@@ -1079,6 +1114,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+st.markdown(
+    '<div class="hogwarts-global-brand"><span class="crest">⚡</span><span class="name">HOGWARTS LEGACY</span><span class="edition">5.0</span></div>',
+    unsafe_allow_html=True,
+)
 
 st.set_page_config(
     page_title="ElectroDiagnose",
