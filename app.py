@@ -20,7 +20,7 @@ from src.severity import score_severity
 
 
 DEVICE_OPTIONS = ["Laptop", "Smartphone", "PCB", "Router"]
-NAV_ITEMS = ["Dashboard", "AI Detector", "History", "Analytics", "Profile"]
+NAV_ITEMS = ["Dashboard", "AI Detector", "Analytics", "History"]
 
 
 def _device_key(device: str) -> str:
