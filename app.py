@@ -1068,6 +1068,50 @@ st.markdown(
         color: var(--hogwarts-muted);
     }
 
+    .login-shell {
+        max-width: 560px;
+        margin: 7vh auto 0 auto;
+    }
+
+    .login-card {
+        text-align: center;
+        padding: 26px 24px 12px 24px;
+    }
+
+    .login-event {
+        display: inline-block;
+        padding: 8px 14px;
+        border: 1px solid #bfdbfe;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #eff6ff, #f0fdf4);
+        color: #1d4ed8;
+        font-size: 14px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+    }
+
+    .login-event span {
+        margin-left: 6px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 11px;
+    }
+
+    .login-title {
+        margin-top: 18px;
+        color: #173b63;
+        font-size: 30px;
+        font-weight: 800;
+    }
+
+    .login-subtitle {
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 14px;
+    }
+
     .hogwarts-global-brand {
         position: fixed;
         top: 12px;
