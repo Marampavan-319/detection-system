@@ -353,6 +353,8 @@ def _render_pie_chart(counts: dict[str, int], title: str) -> None:
     st.markdown(chart, unsafe_allow_html=True)
 
 def _dashboard(records: list[dict[str, Any]]) -> None:
+    <div class="hogwarts-brand"><span class="crest">⚡</span><span class="name">HOGWARTS LEGACY</span><span class="edition">5.0</span></div>
+
     st.title("👋 Welcome to ElectroDiagnose")
     st.caption("AI-assisted visual and multimodal diagnostic dashboard")
 
@@ -912,6 +914,170 @@ def _ai_detector() -> None:
         )
 
 
+
+
+# --- Professional HOGWARTS LEGACY theme ---
+st.markdown(
+    """
+    <style>
+    :root {
+        --hogwarts-bg: #0b1020;
+        --hogwarts-panel: #121a2b;
+        --hogwarts-panel-2: #172238;
+        --hogwarts-border: rgba(148, 163, 184, 0.18);
+        --hogwarts-text: #eef2ff;
+        --hogwarts-muted: #a9b4c7;
+        --hogwarts-accent: #8b5cf6;
+        --hogwarts-accent-2: #38bdf8;
+    }
+
+    .stApp {
+        background:
+            radial-gradient(circle at 85% 8%, rgba(139, 92, 246, .16), transparent 28%),
+            radial-gradient(circle at 10% 30%, rgba(56, 189, 248, .08), transparent 24%),
+            linear-gradient(135deg, #080d1a 0%, #0b1020 48%, #10182a 100%);
+        color: var(--hogwarts-text);
+    }
+
+    [data-testid="stHeader"] {
+        background: rgba(8, 13, 26, .72);
+        backdrop-filter: blur(12px);
+    }
+
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0a0f1d 0%, #111827 100%);
+        border-right: 1px solid var(--hogwarts-border);
+    }
+
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1.2rem;
+    }
+
+    [data-testid="stSidebar"] button {
+        border-radius: 10px;
+        border: 1px solid transparent;
+        transition: all .2s ease;
+    }
+
+    [data-testid="stSidebar"] button:hover {
+        border-color: rgba(139, 92, 246, .45);
+        background: rgba(139, 92, 246, .12);
+    }
+
+    .block-container {
+        max-width: 1450px;
+        padding-top: 2.2rem;
+        padding-bottom: 3rem;
+    }
+
+    h1, h2, h3, h4 {
+        color: #f8fafc !important;
+        letter-spacing: -.02em;
+    }
+
+    p, label, [data-testid="stCaptionContainer"] {
+        color: var(--hogwarts-muted);
+    }
+
+    [data-testid="stMetric"] {
+        background: linear-gradient(145deg, rgba(23, 34, 56, .92), rgba(18, 26, 43, .92));
+        border: 1px solid var(--hogwarts-border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #f8fafc !important;
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #a9b4c7 !important;
+    }
+
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(18, 26, 43, .72);
+        border-color: var(--hogwarts-border) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, .14);
+    }
+
+    .stButton > button {
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, .22);
+        background: rgba(23, 34, 56, .9);
+        color: #eef2ff;
+        font-weight: 600;
+        transition: all .2s ease;
+    }
+
+    .stButton > button:hover {
+        border-color: rgba(139, 92, 246, .7);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #7c3aed, #2563eb);
+        border: none;
+        color: white;
+    }
+
+    input, textarea, [data-baseweb="select"] > div {
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: rgba(148, 163, 184, .24) !important;
+    }
+
+    [data-testid="stFileUploaderDropzone"] {
+        background: rgba(17, 24, 39, .78);
+        border: 1px dashed rgba(139, 92, 246, .45);
+        border-radius: 14px;
+    }
+
+    [data-testid="stExpander"] {
+        background: rgba(18, 26, 43, .72);
+        border: 1px solid var(--hogwarts-border);
+        border-radius: 12px;
+    }
+
+    hr {
+        border-color: var(--hogwarts-border) !important;
+    }
+
+    .hogwarts-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 24px 0;
+        padding: 9px 15px;
+        border: 1px solid rgba(139, 92, 246, .28);
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(139, 92, 246, .13), rgba(56, 189, 248, .08));
+        box-shadow: 0 8px 30px rgba(0, 0, 0, .18);
+    }
+
+    .hogwarts-brand .crest {
+        font-size: 20px;
+    }
+
+    .hogwarts-brand .name {
+        color: #f8fafc;
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: .12em;
+    }
+
+    .hogwarts-brand .edition {
+        color: #9ca3af;
+        font-size: 11px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.set_page_config(
     page_title="ElectroDiagnose",
