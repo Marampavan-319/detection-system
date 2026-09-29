@@ -10,6 +10,8 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 
 from src.components import identify_components
+from src.database import list_diagnoses, save_diagnosis
+from src.report import generate_pdf_report
 from src.diagnosis import diagnose
 from src.localization import localize_defects
 from src.reasoning import reason_about_evidence
