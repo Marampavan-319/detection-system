@@ -3,22 +3,23 @@
 from __future__ import annotations
 
 from io import BytesIO
-from pathlib import Path
 from typing import Any
 
+import plotly.express as px
 import streamlit as st
 from PIL import Image, ImageDraw, ImageOps
 
 from src.components import identify_components
 from src.database import get_diagnosis, list_diagnoses, save_diagnosis
-from src.report import generate_pdf_report
 from src.diagnosis import diagnose
 from src.localization import localize_defects
 from src.reasoning import reason_about_evidence
+from src.report import generate_pdf_report
 from src.severity import score_severity
 
 
 DEVICE_OPTIONS = ["Laptop", "Smartphone", "PCB", "Router"]
+NAV_ITEMS = ["Dashboard", "AI Detector", "History", "Analytics", "Profile"]
 
 
 def _device_key(device: str) -> str:
@@ -38,25 +39,19 @@ def _demo_detections(device: str, image: Image.Image) -> list[dict[str, Any]]:
     }
     class_name, confidence, rel_box = demo_classes[category]
     x1, y1, x2, y2 = rel_box
-    return [
-        {
-            "class_id": 0,
-            "class_name": class_name,
-            "confidence": confidence,
-            "bbox": [x1 * width, y1 * height, x2 * width, y2 * height],
-        }
-    ]
+    return [{
+        "class_id": 0,
+        "class_name": class_name,
+        "confidence": confidence,
+        "bbox": [x1 * width, y1 * height, x2 * width, y2 * height],
+    }]
 
 
 def _run_yolo(device: str, image: Image.Image, model_path: str, confidence: float, iou: float):
     """Run the existing YOLO wrapper without importing Ultralytics at app startup."""
     from src.detection import YOLODetector
 
-    detector = YOLODetector(
-        model_path=model_path,
-        confidence=confidence,
-        iou=iou,
-    )
+    detector = YOLODetector(model_path=model_path, confidence=confidence, iou=iou)
     return [item.to_dict() for item in detector.detect(image)]
 
 
@@ -78,12 +73,7 @@ def analyze_evidence(
         symptoms=symptoms,
     )
     severity = score_severity(locations, reasoning)
-    result = diagnose(
-        device=device,
-        locations=locations,
-        reasoning=reasoning,
-        severity=severity,
-    )
+    result = diagnose(device=device, locations=locations, reasoning=reasoning, severity=severity)
     return {
         "detections": detections,
         "components": matches,
@@ -100,10 +90,7 @@ def draw_findings(image: Image.Image, locations: list[dict[str, Any]]) -> Image.
     draw = ImageDraw.Draw(canvas)
     for index, item in enumerate(locations, start=1):
         x1, y1, x2, y2 = [int(round(v)) for v in item["bbox"]]
-        label = (
-            f"{index}. {item['defect_class']} | "
-            f"{item['confidence']:.2f}"
-        )
+        label = f"{index}. {item['defect_class']} | {item['confidence']:.2f}"
         draw.rectangle((x1, y1, x2, y2), outline="red", width=4)
         text_box = draw.textbbox((x1, max(0, y1 - 22)), label)
         draw.rectangle(text_box, fill="red")
@@ -111,11 +98,11 @@ def draw_findings(image: Image.Image, locations: list[dict[str, Any]]) -> Image.
     return canvas
 
 
-def _render_history(container) -> None:
+def _render_history(container, limit: int = 5) -> None:
     """Render recent diagnoses with controls for opening saved records."""
     with container.container():
         st.markdown("**Recent diagnosis history**")
-        records = list_diagnoses(5)
+        records = list_diagnoses(limit)
         if not records:
             st.caption("No saved diagnoses yet.")
             return
@@ -128,11 +115,9 @@ def _render_history(container) -> None:
                     f"{record['status']} · {record['confidence']:.0%}"
                 )
             with col_button:
-                if st.button(
-                    "View",
-                    key=f"view_diagnosis_{record['id']}_{render_token}",
-                ):
+                if st.button("View", key=f"view_diagnosis_{record['id']}_{render_token}"):
                     st.session_state["selected_diagnosis_id"] = record["id"]
+                    st.session_state["page"] = "History"
 
 
 def _show_result(result: dict[str, Any], annotated: Image.Image, history_container) -> None:
@@ -143,11 +128,10 @@ def _show_result(result: dict[str, Any], annotated: Image.Image, history_contain
     st.divider()
     st.subheader("Diagnostic Result")
 
-    status = diagnosis["status"]
-    if status == "DEFECT_DETECTED":
-        st.success("Visible defect evidence detected")
+    if diagnosis["status"] == "DEFECT_DETECTED":
+        st.error("🔴 Defect evidence detected")
     else:
-        st.warning("Insufficient evidence for a localized defect")
+        st.warning("🟡 Insufficient evidence for a localized defect")
 
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Confidence", f"{diagnosis['confidence']:.0%}")
@@ -161,7 +145,6 @@ def _show_result(result: dict[str, Any], annotated: Image.Image, history_contain
     with right:
         st.markdown("#### Summary")
         st.write(diagnosis["summary"])
-
         st.markdown("#### Findings")
         if diagnosis["findings"]:
             for finding in diagnosis["findings"]:
@@ -213,6 +196,305 @@ def _show_result(result: dict[str, Any], annotated: Image.Image, history_contain
     )
 
 
+def _show_saved_diagnosis(selected_id: int) -> None:
+    selected = get_diagnosis(selected_id)
+    if selected is None:
+        st.warning("Saved diagnosis could not be found.")
+        return
+
+    st.subheader(f"Saved Diagnosis #{selected['id']}")
+    sm1, sm2, sm3, sm4 = st.columns(4)
+    sm1.metric("Device", selected["device"].title())
+    sm2.metric("Confidence", f"{selected['confidence']:.0%}")
+    sm3.metric("Severity", selected["severity"])
+    sm4.metric("Priority", selected["priority"])
+    st.write(f"**Status:** {selected['status']}")
+    st.write(f"**Saved:** {selected['timestamp']}")
+    st.markdown("**Summary**")
+    st.write(selected["summary"])
+
+    st.markdown("**Findings**")
+    if selected["findings"]:
+        for finding in selected["findings"]:
+            st.write(
+                f"• **{finding.get('defect', 'Unknown')}** → "
+                f"{finding.get('component', 'Unknown')} "
+                f"({finding.get('region', 'Unknown')}) · "
+                f"{float(finding.get('confidence', 0)):.0%}"
+            )
+    else:
+        st.write("No localized findings.")
+
+    rc1, rc2 = st.columns(2)
+    with rc1:
+        st.markdown("**Possible causes**")
+        for cause in selected["possible_causes"]:
+            st.write(f"• {cause}")
+    with rc2:
+        st.markdown("**Recommended next actions**")
+        for action in selected["next_actions"]:
+            st.write(f"• {action}")
+
+    with st.expander("Safety limitations", expanded=False):
+        for item in selected["limitations"]:
+            st.write(f"• {item}")
+
+
+def _dashboard(records: list[dict[str, Any]]) -> None:
+    st.title("👋 Welcome to ElectroDiagnose")
+    st.caption("AI-assisted visual and multimodal diagnostic dashboard")
+
+    total = len(records)
+    defects = sum(r["status"] == "DEFECT_DETECTED" for r in records)
+    high = sum(r["severity"] == "HIGH" for r in records)
+    medium = sum(r["severity"] == "MEDIUM" for r in records)
+    low = sum(r["severity"] == "LOW" for r in records)
+
+    st.markdown("### Overview")
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Total diagnoses", total)
+    k2.metric("Defects detected", defects)
+    k3.metric("High severity", high)
+    k4.metric("Medium / Low", medium + low)
+
+    st.markdown("### Quick access")
+    q1, q2, q3, q4 = st.columns(4)
+    cards = [
+        ("🤖", "AI Detector", "Start a new diagnostic analysis", "AI Detector"),
+        ("🕘", "History", "Open saved diagnostic cases", "History"),
+        ("📊", "Analytics", "Explore device and status trends", "Analytics"),
+        ("👤", "Profile", "View your ElectroDiagnose profile", "Profile"),
+    ]
+    for col, (icon, title, description, target) in zip((q1, q2, q3, q4), cards):
+        with col:
+            st.markdown(f"### {icon} {title}")
+            st.caption(description)
+            if st.button(f"Open {title}", key=f"dashboard_{target.lower().replace(' ', '_')}"):
+                st.session_state["page"] = target
+                st.rerun()
+
+    st.markdown("### Device distribution")
+    if records:
+        device_counts = {}
+        for record in records:
+            name = record["device"].title()
+            device_counts[name] = device_counts.get(name, 0) + 1
+        fig = px.pie(
+            values=list(device_counts.values()),
+            names=list(device_counts.keys()),
+            hole=0.45,
+            title="Share of saved cases by device",
+        )
+        fig.update_layout(height=360, margin=dict(l=10, r=10, t=55, b=10))
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("This chart shows the share of saved cases by device, not the percentage of devices that are defective.")
+    else:
+        st.info("Save a diagnosis to populate dashboard analytics.")
+
+    st.markdown("### Recent diagnoses")
+    if not records:
+        st.info("No saved diagnoses yet. Open AI Detector to run your first analysis.")
+        return
+
+    for record in records[:5]:
+        c1, c2, c3, c4, c5 = st.columns([1.2, 1.5, 1.5, 1.2, 0.8])
+        c1.write(f"**#{record['id']}**")
+        c2.write(record["device"].title())
+        c3.write(record["status"].replace("_", " ").title())
+        c4.write(f"{record['confidence']:.0%} · {record['severity']}")
+        if c5.button("View", key=f"dashboard_view_{record['id']}"):
+            st.session_state["selected_diagnosis_id"] = record["id"]
+            st.session_state["page"] = "History"
+            st.rerun()
+
+
+def _analytics(records: list[dict[str, Any]]) -> None:
+    st.title("📊 Analytics")
+    st.caption("Live analytics calculated from saved SQLite diagnosis history.")
+
+    if not records:
+        st.info("No saved diagnoses yet. Run and save a diagnosis to see analytics.")
+        return
+
+    status_counts = {}
+    device_counts = {}
+    severity_counts = {}
+    for record in records:
+        status = record["status"].replace("_", " ").title()
+        device = record["device"].title()
+        severity = record["severity"].title()
+        status_counts[status] = status_counts.get(status, 0) + 1
+        device_counts[device] = device_counts.get(device, 0) + 1
+        severity_counts[severity] = severity_counts.get(severity, 0) + 1
+
+    a1, a2 = st.columns(2)
+    with a1:
+        fig = px.pie(values=list(device_counts.values()), names=list(device_counts.keys()), hole=0.45, title="Cases by device")
+        fig.update_layout(height=360, margin=dict(l=10, r=10, t=55, b=10))
+        st.plotly_chart(fig, use_container_width=True)
+    with a2:
+        fig = px.pie(values=list(status_counts.values()), names=list(status_counts.keys()), hole=0.45, title="Diagnostic status")
+        fig.update_layout(height=360, margin=dict(l=10, r=10, t=55, b=10))
+        st.plotly_chart(fig, use_container_width=True)
+
+    st.markdown("### Severity distribution")
+    st.bar_chart(severity_counts)
+    st.caption("Analytics are based only on saved diagnoses currently stored in the local SQLite database.")
+
+
+def _history(records: list[dict[str, Any]]) -> None:
+    st.title("🕘 Diagnosis History")
+    st.caption("Saved diagnostic cases and their complete result summaries.")
+
+    if not records:
+        st.info("No saved diagnoses yet.")
+        return
+
+    selected_id = st.session_state.get("selected_diagnosis_id")
+    if selected_id is not None:
+        if st.button("← Back to history list", key="history_back"):
+            st.session_state["selected_diagnosis_id"] = None
+            st.rerun()
+        _show_saved_diagnosis(selected_id)
+        st.divider()
+
+    for record in records:
+        with st.container(border=True):
+            h1, h2, h3, h4, h5 = st.columns([0.8, 1.2, 1.7, 1.2, 0.8])
+            h1.write(f"**#{record['id']}**")
+            h2.write(record["device"].title())
+            h3.write(record["status"].replace("_", " ").title())
+            h4.write(f"{record['confidence']:.0%} · {record['severity']}")
+            if h5.button("View", key=f"history_view_{record['id']}"):
+                st.session_state["selected_diagnosis_id"] = record["id"]
+                st.rerun()
+
+
+def _profile() -> None:
+    st.title("👤 Profile")
+    st.caption("ElectroDiagnose user profile")
+    p1, p2 = st.columns(2)
+    with p1:
+        st.markdown("### User")
+        st.write("ElectroDiagnose User")
+        st.caption("Hackathon prototype account")
+    with p2:
+        st.markdown("### System")
+        st.write("AI-assisted visual diagnosis")
+        st.caption("Local SQLite history · YOLO-compatible detection pipeline")
+
+
+def _ai_detector() -> None:
+    st.title("🤖 AI Detector")
+    st.caption("Run a new evidence-based diagnostic analysis.")
+
+    with st.sidebar:
+        st.header("Analysis Settings")
+        device = st.selectbox("Device category", DEVICE_OPTIONS)
+        mode = st.radio(
+            "Inference mode",
+            ["Pipeline demo", "YOLO model"],
+            help="Pipeline demo uses deterministic sample detections for a reliable presentation. YOLO model runs the configured Ultralytics model.",
+        )
+        model_path = st.text_input("YOLO model path", value="yolo11n.pt", disabled=mode != "YOLO model")
+        confidence = st.slider("Detection confidence", 0.05, 0.95, 0.25, 0.05)
+        iou = st.slider("IoU threshold", 0.10, 0.90, 0.45, 0.05)
+        st.divider()
+        st.markdown("**Pipeline**")
+        st.write("Image → Detection → Component → Localization → Reasoning → Severity → Diagnosis")
+
+    history_container = st.empty()
+
+    uploaded_files = st.file_uploader(
+        "Upload device / component evidence",
+        type=["jpg", "jpeg", "png", "webp"],
+        accept_multiple_files=True,
+        help="You can upload multiple views of the same device.",
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        symptoms = st.text_area(
+            "Symptoms (optional)",
+            placeholder="Example: Device powers on but the screen flickers.",
+            height=120,
+        )
+    with col2:
+        ocr_text = st.text_area(
+            "Error / OCR text (optional)",
+            placeholder="Paste visible error text, diagnostic output, or log message.",
+            height=120,
+        )
+
+    analyze = st.button("🔍 Analyze Evidence", type="primary", use_container_width=True)
+
+    if analyze:
+        if not uploaded_files:
+            st.warning("Upload at least one image before analysis.")
+        else:
+            all_locations: list[dict[str, Any]] = []
+            all_detections: list[dict[str, Any]] = []
+            last_image: Image.Image | None = None
+
+            progress = st.progress(0.0, text="Preparing evidence...")
+            for index, uploaded in enumerate(uploaded_files, start=1):
+                image = ImageOps.exif_transpose(Image.open(BytesIO(uploaded.getvalue()))).convert("RGB")
+                last_image = image
+
+                if mode == "Pipeline demo":
+                    detections = _demo_detections(device, image)
+                else:
+                    with st.spinner(f"Running YOLO on {uploaded.name}..."):
+                        detections = _run_yolo(device, image, model_path, confidence, iou)
+
+                result = analyze_evidence(
+                    device=device,
+                    image=image,
+                    detections=detections,
+                    ocr_text=ocr_text,
+                    symptoms=symptoms,
+                )
+                all_detections.extend(result["detections"])
+                all_locations.extend(result["locations"])
+                progress.progress(index / len(uploaded_files), text=f"Processed {index}/{len(uploaded_files)} evidence image(s)")
+
+            if last_image is not None:
+                combined_reasoning = reason_about_evidence(
+                    device=device,
+                    locations=all_locations,
+                    ocr_text=ocr_text,
+                    symptoms=symptoms,
+                )
+                combined_severity = score_severity(all_locations, combined_reasoning)
+                combined_diagnosis = diagnose(
+                    device=device,
+                    locations=all_locations,
+                    reasoning=combined_reasoning,
+                    severity=combined_severity,
+                )
+                combined = {
+                    "detections": all_detections,
+                    "locations": all_locations,
+                    "reasoning": combined_reasoning,
+                    "severity": combined_severity,
+                    "diagnosis": combined_diagnosis,
+                }
+                annotated = draw_findings(last_image, all_locations)
+                if mode == "Pipeline demo":
+                    st.info("Demo mode: findings are deterministic presentation data, not model predictions.")
+                else:
+                    st.info("YOLO mode: results depend on the selected model and its trained classes.")
+                st.session_state["latest_result"] = combined
+                st.session_state["latest_annotated"] = annotated
+
+    if st.session_state["latest_result"] is not None and st.session_state["latest_annotated"] is not None:
+        _show_result(
+            st.session_state["latest_result"],
+            st.session_state["latest_annotated"],
+            history_container,
+        )
+
+
 st.set_page_config(
     page_title="ElectroDiagnose",
     page_icon="🔧",
@@ -220,179 +502,44 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.title("🔧 ElectroDiagnose")
-st.caption("AI-assisted visual and multimodal diagnostic dashboard")
-
 if "latest_result" not in st.session_state:
     st.session_state["latest_result"] = None
 if "latest_annotated" not in st.session_state:
     st.session_state["latest_annotated"] = None
 if "history_render_token" not in st.session_state:
     st.session_state["history_render_token"] = 0
+if "page" not in st.session_state:
+    st.session_state["page"] = "Dashboard"
 
 with st.sidebar:
-    st.header("Analysis Settings")
-    device = st.selectbox("Device category", DEVICE_OPTIONS)
-    mode = st.radio(
-        "Inference mode",
-        ["Pipeline demo", "YOLO model"],
-        help=(
-            "Pipeline demo uses deterministic sample detections for a reliable "
-            "hackathon presentation. YOLO model runs the configured Ultralytics model."
-        ),
-    )
-    model_path = st.text_input(
-        "YOLO model path",
-        value="yolo11n.pt",
-        disabled=mode != "YOLO model",
-    )
-    confidence = st.slider("Detection confidence", 0.05, 0.95, 0.25, 0.05)
-    iou = st.slider("IoU threshold", 0.10, 0.90, 0.45, 0.05)
-
+    st.title("🔧 ElectroDiagnose")
+    st.caption("AI-powered defect analysis")
     st.divider()
-    st.markdown("**Pipeline**")
-    st.write("Image → Detection → Component → Localization → Reasoning → Severity → Diagnosis")
-    history_container = st.empty()
+    for item in NAV_ITEMS:
+        if st.button(item, key=f"nav_{item.lower().replace(' ', '_')}", use_container_width=True):
+            st.session_state["page"] = item
+            if item != "History":
+                st.session_state["selected_diagnosis_id"] = None
+            st.rerun()
+    st.divider()
+    if st.button("🚪 Logout", use_container_width=True):
+        st.session_state["page"] = "Dashboard"
+        st.session_state["selected_diagnosis_id"] = None
+        st.info("Login/logout authentication will be connected in the next remodel step.")
 
-_render_history(history_container)
+records = list_diagnoses(100)
+page = st.session_state["page"]
 
-selected_id = st.session_state.get("selected_diagnosis_id")
-if selected_id is not None:
-    selected = get_diagnosis(selected_id)
-    if selected is not None:
-        st.divider()
-        st.subheader(f"Saved Diagnosis #{selected['id']}")
-        sm1, sm2, sm3, sm4 = st.columns(4)
-        sm1.metric("Device", selected["device"])
-        sm2.metric("Confidence", f"{selected['confidence']:.0%}")
-        sm3.metric("Severity", selected["severity"])
-        sm4.metric("Priority", selected["priority"])
-        st.write(f"**Status:** {selected['status']}")
-        st.write(f"**Saved:** {selected['timestamp']}")
-        st.markdown("**Summary**")
-        st.write(selected["summary"])
-        st.markdown("**Findings**")
-        if selected["findings"]:
-            for finding in selected["findings"]:
-                st.write(
-                    f"• **{finding.get('defect', 'Unknown')}** → "
-                    f"{finding.get('component', 'Unknown')} "
-                    f"({finding.get('region', 'Unknown')}) · "
-                    f"{float(finding.get('confidence', 0)):.0%}"
-                )
-        else:
-            st.write("No localized findings.")
-        rc1, rc2 = st.columns(2)
-        with rc1:
-            st.markdown("**Possible causes**")
-            for cause in selected["possible_causes"]:
-                st.write(f"• {cause}")
-        with rc2:
-            st.markdown("**Recommended next actions**")
-            for action in selected["next_actions"]:
-                st.write(f"• {action}")
-        with st.expander("Safety limitations", expanded=False):
-            for item in selected["limitations"]:
-                st.write(f"• {item}")
-
-uploaded_files = st.file_uploader(
-    "Upload device / component evidence",
-    type=["jpg", "jpeg", "png", "webp"],
-    accept_multiple_files=True,
-    help="You can upload multiple views of the same device.",
-)
-
-col1, col2 = st.columns(2)
-with col1:
-    symptoms = st.text_area(
-        "Symptoms (optional)",
-        placeholder="Example: Device powers on but the screen flickers.",
-        height=120,
-    )
-with col2:
-    ocr_text = st.text_area(
-        "Error / OCR text (optional)",
-        placeholder="Paste visible error text, diagnostic output, or log message.",
-        height=120,
-    )
-
-analyze = st.button("🔍 Analyze Evidence", type="primary", use_container_width=True)
-
-if analyze:
-    if not uploaded_files:
-        st.warning("Upload at least one image before analysis.")
-    else:
-        all_locations: list[dict[str, Any]] = []
-        all_detections: list[dict[str, Any]] = []
-        last_image: Image.Image | None = None
-
-        progress = st.progress(0.0, text="Preparing evidence...")
-        for index, uploaded in enumerate(uploaded_files, start=1):
-            image = ImageOps.exif_transpose(Image.open(BytesIO(uploaded.getvalue()))).convert("RGB")
-            last_image = image
-
-            if mode == "Pipeline demo":
-                detections = _demo_detections(device, image)
-            else:
-                with st.spinner(f"Running YOLO on {uploaded.name}..."):
-                    detections = _run_yolo(
-                        device,
-                        image,
-                        model_path,
-                        confidence,
-                        iou,
-                    )
-
-            result = analyze_evidence(
-                device=device,
-                image=image,
-                detections=detections,
-                ocr_text=ocr_text,
-                symptoms=symptoms,
-            )
-            all_detections.extend(result["detections"])
-            all_locations.extend(result["locations"])
-            progress.progress(
-                index / len(uploaded_files),
-                text=f"Processed {index}/{len(uploaded_files)} evidence image(s)",
-            )
-
-        if last_image is not None:
-            combined_reasoning = reason_about_evidence(
-                device=device,
-                locations=all_locations,
-                ocr_text=ocr_text,
-                symptoms=symptoms,
-            )
-            combined_severity = score_severity(all_locations, combined_reasoning)
-            combined_diagnosis = diagnose(
-                device=device,
-                locations=all_locations,
-                reasoning=combined_reasoning,
-                severity=combined_severity,
-            )
-            combined = {
-                "detections": all_detections,
-                "locations": all_locations,
-                "reasoning": combined_reasoning,
-                "severity": combined_severity,
-                "diagnosis": combined_diagnosis,
-            }
-            annotated = draw_findings(last_image, all_locations)
-            if mode == "Pipeline demo":
-                st.info("Demo mode: findings are deterministic presentation data, not model predictions.")
-            else:
-                st.info("YOLO mode: results depend on the selected model and its trained classes.")
-            st.session_state["latest_result"] = combined
-            st.session_state["latest_annotated"] = annotated
-
-# Render the latest result from session state so Save diagnosis survives Streamlit reruns.
-if st.session_state["latest_result"] is not None and st.session_state["latest_annotated"] is not None:
-    _show_result(
-        st.session_state["latest_result"],
-        st.session_state["latest_annotated"],
-        history_container,
-    )
+if page == "Dashboard":
+    _dashboard(records)
+elif page == "AI Detector":
+    _ai_detector()
+elif page == "History":
+    _history(records)
+elif page == "Analytics":
+    _analytics(records)
+elif page == "Profile":
+    _profile()
 
 st.divider()
 st.caption(
