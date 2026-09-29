@@ -189,6 +189,7 @@ def _show_result(result: dict[str, Any], annotated: Image.Image, history_contain
 
     if st.button("Save diagnosis", key="save_diagnosis"):
         record_id = save_diagnosis(diagnosis)
+        st.session_state["last_saved_diagnosis_id"] = record_id
         st.success(f"Diagnosis saved to history (ID {record_id}).")
         _render_history(history_container)
 
@@ -211,6 +212,11 @@ st.set_page_config(
 
 st.title("🔧 ElectroDiagnose")
 st.caption("AI-assisted visual and multimodal diagnostic dashboard")
+
+if "latest_result" not in st.session_state:
+    st.session_state["latest_result"] = None
+if "latest_annotated" not in st.session_state:
+    st.session_state["latest_annotated"] = None
 
 with st.sidebar:
     st.header("Analysis Settings")
@@ -326,7 +332,16 @@ if analyze:
                 st.info("Demo mode: findings are deterministic presentation data, not model predictions.")
             else:
                 st.info("YOLO mode: results depend on the selected model and its trained classes.")
-            _show_result(combined, annotated, history_container)
+            st.session_state["latest_result"] = combined
+            st.session_state["latest_annotated"] = annotated
+
+# Render the latest result from session state so Save diagnosis survives Streamlit reruns.
+if st.session_state["latest_result"] is not None and st.session_state["latest_annotated"] is not None:
+    _show_result(
+        st.session_state["latest_result"],
+        st.session_state["latest_annotated"],
+        history_container,
+    )
 
 st.divider()
 st.caption(
