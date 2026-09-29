@@ -445,11 +445,77 @@ def _analytics(records: list[dict[str, Any]]) -> None:
 
 def _history(records: list[dict[str, Any]]) -> None:
     st.title("🕘 Diagnosis History")
-    st.caption("Saved diagnostic cases and their complete result summaries.")
+    st.caption("Search, filter, and open complete saved diagnostic cases.")
 
     if not records:
-        st.info("No saved diagnoses yet.")
+        st.info("No saved diagnoses yet. Run and save a diagnosis from AI Detector.")
         return
+
+    # Summary metrics for the currently loaded history.
+    total = len(records)
+    defects = sum(r["status"] == "DEFECT_DETECTED" for r in records)
+    high = sum(r["severity"] == "HIGH" for r in records)
+    review = sum(bool(r["review_required"]) for r in records)
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Saved cases", total)
+    m2.metric("Defects detected", defects)
+    m3.metric("High severity", high)
+    m4.metric("Review required", review)
+
+    st.markdown("### 🔎 Find a case")
+    f1, f2, f3, f4 = st.columns([2.2, 1.1, 1.1, 1.1])
+
+    with f1:
+        search = st.text_input(
+            "Search",
+            placeholder="Case ID, device, status, summary, finding...",
+            label_visibility="collapsed",
+            key="history_search",
+        )
+    with f2:
+        device_filter = st.selectbox(
+            "Device",
+            ["All"] + sorted({r["device"].title() for r in records}),
+            key="history_device_filter",
+        )
+    with f3:
+        severity_filter = st.selectbox(
+            "Severity",
+            ["All", "HIGH", "MEDIUM", "LOW", "UNKNOWN"],
+            key="history_severity_filter",
+        )
+    with f4:
+        status_filter = st.selectbox(
+            "Status",
+            ["All", "DEFECT_DETECTED", "INSUFFICIENT_EVIDENCE"],
+            key="history_status_filter",
+        )
+
+    search_term = search.strip().lower()
+    filtered = []
+    for record in records:
+        if device_filter != "All" and record["device"].title() != device_filter:
+            continue
+        if severity_filter != "All" and record["severity"] != severity_filter:
+            continue
+        if status_filter != "All" and record["status"] != status_filter:
+            continue
+
+        haystack = " ".join([
+            str(record["id"]),
+            record.get("device", ""),
+            record.get("status", ""),
+            record.get("severity", ""),
+            record.get("priority", ""),
+            record.get("summary", ""),
+            " ".join(str(x) for x in record.get("findings", [])),
+        ]).lower()
+        if search_term and search_term not in haystack:
+            continue
+        filtered.append(record)
+
+    st.caption(f"Showing {len(filtered)} of {total} saved case(s).")
 
     selected_id = st.session_state.get("selected_diagnosis_id")
     if selected_id is not None:
@@ -459,16 +525,32 @@ def _history(records: list[dict[str, Any]]) -> None:
         _show_saved_diagnosis(selected_id)
         st.divider()
 
-    for record in records:
+    if not filtered:
+        st.info("No cases match the current search and filters.")
+        return
+
+    st.markdown("### 📋 Cases")
+
+    for record in filtered:
+        status_label = record["status"].replace("_", " ").title()
+        severity_label = record["severity"].title()
+        priority_label = record["priority"].title()
+        saved_time = record["timestamp"].replace("T", " ")[:19]
+
         with st.container(border=True):
-            h1, h2, h3, h4, h5 = st.columns([0.8, 1.2, 1.7, 1.2, 0.8])
-            h1.write(f"**#{record['id']}**")
-            h2.write(record["device"].title())
-            h3.write(record["status"].replace("_", " ").title())
-            h4.write(f"{record['confidence']:.0%} · {record['severity']}")
-            if h5.button("View", key=f"history_view_{record['id']}"):
+            top = st.columns([0.75, 1.15, 1.45, 1.05, 1.0, 0.8])
+            top[0].markdown(f"**#{record['id']}**")
+            top[1].write(record["device"].title())
+            top[2].write(status_label)
+            top[3].write(f"{record['confidence']:.0%}")
+            top[4].write(f"{severity_label} / {priority_label}")
+            if top[5].button("View", key=f"history_view_{record['id']}"):
                 st.session_state["selected_diagnosis_id"] = record["id"]
                 st.rerun()
+
+            st.caption(f"Saved: {saved_time} UTC")
+            if record.get("summary"):
+                st.write(record["summary"])
 
 
 def _profile() -> None:
