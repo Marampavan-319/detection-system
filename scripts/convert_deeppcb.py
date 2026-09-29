@@ -3,12 +3,8 @@ Convert a locally downloaded DeepPCB dataset to this project's YOLO format.
 
 No network access is used. No other GitHub repository is required.
 
-This converter is intentionally robust to different local extraction layouts.
-It searches recursively for images and matching annotation .txt files instead
-of assuming a specific filename such as *_test.jpg.
-
-DeepPCB annotation format:
-    x1,y1,x2,y2,type
+DeepPCB annotations in this Kaggle copy use:
+    x1 y1 x2 y2 type
 
 DeepPCB type IDs:
     1 open
@@ -25,9 +21,6 @@ Project YOLO IDs:
     9 spur
     11 spurious_copper
     10 pin_hole
-
-Usage:
-    python scripts/convert_deeppcb.py --source datasets/raw/pcb
 """
 
 from __future__ import annotations
@@ -86,16 +79,22 @@ def find_label(image: Path, labels_by_stem):
     if not matches:
         return None
 
-    # Prefer an annotation file located in the same directory.
     for candidate in matches:
         if candidate.parent == image.parent:
+            return candidate
+
+    # Prefer a labels directory with the same relative dataset branch.
+    for candidate in matches:
+        if candidate.parent.name.lower() == "labels":
             return candidate
 
     return matches[0]
 
 
 def convert_box(line, width, height):
-    parts = line.strip().split(",")
+    # Kaggle DeepPCB annotation files use whitespace-separated values:
+    # x1 y1 x2 y2 class_id
+    parts = line.strip().replace(",", " ").split()
     if len(parts) != 5:
         return None
 
@@ -146,15 +145,15 @@ def main():
 
     if not labeled_images:
         print("No image/annotation pairs were found.")
-        print("The dataset may use a different annotation layout.")
-        print("Run the diagnostic command shown in the project instructions.")
         return
 
     splits = split(labeled_images, a.seed)
 
     for split_name, items in splits.items():
-        (OUT / "images" / split_name).mkdir(parents=True, exist_ok=True)
-        (OUT / "labels" / split_name).mkdir(parents=True, exist_ok=True)
+        image_dir = OUT / "images" / split_name
+        label_dir = OUT / "labels" / split_name
+        image_dir.mkdir(parents=True, exist_ok=True)
+        label_dir.mkdir(parents=True, exist_ok=True)
 
         converted = 0
         skipped = 0
@@ -179,16 +178,11 @@ def main():
                 skipped += 1
                 continue
 
-            # Avoid collisions when different folders contain the same filename.
             relative = src.relative_to(source)
             safe_stem = "_".join(relative.with_suffix("").parts)
 
-            destination_image = (
-                OUT / "images" / split_name / f"{safe_stem}{src.suffix.lower()}"
-            )
-            destination_label = (
-                OUT / "labels" / split_name / f"{safe_stem}.txt"
-            )
+            destination_image = image_dir / f"{safe_stem}{src.suffix.lower()}"
+            destination_label = label_dir / f"{safe_stem}.txt"
 
             shutil.copy2(src, destination_image)
             destination_label.write_text(
