@@ -1065,13 +1065,23 @@ st.markdown(
     }
 
     .login-shell {
-        max-width: 560px;
-        margin: 7vh auto 0 auto;
+        width: min(92vw, 620px);
+        margin: 8vh auto 8vh auto;
+        padding: 0 28px;
+        box-sizing: border-box;
     }
 
     .login-card {
+        width: 100%;
+        max-width: 560px;
+        margin: 0 auto;
         text-align: center;
-        padding: 26px 24px 12px 24px;
+        padding: 34px 34px 24px 34px;
+        box-sizing: border-box;
+        border: 1px solid #dbeafe;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.97);
+        box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
     }
 
     .login-event {
