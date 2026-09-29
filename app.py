@@ -1087,7 +1087,7 @@ st.markdown(
     /* Center both authentication forms as clean, consistent cards */
     div[data-testid="stForm"]:has(input[aria-label="Full Name"]),
     div[data-testid="stForm"]:has(input[aria-label="Email"]) {
-        max-width: 620px;
+        max-width: 540px;
         margin: 28px auto 36px auto;
         padding: 28px 30px 26px 30px;
         border: 1px solid #dbeafe;
