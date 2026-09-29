@@ -802,10 +802,6 @@ def _ai_detector() -> None:
     st.markdown("### ✨ New Chat")
     st.caption("Start a fresh diagnostic case using one or more evidence images.")
 
-    if not st.session_state["authenticated"]:
-    _login_screen()
-    st.stop()
-
 with st.sidebar:
         st.header("Analysis Settings")
         device = st.selectbox("Device category", DEVICE_OPTIONS)
@@ -1278,6 +1274,10 @@ if "history_render_token" not in st.session_state:
     st.session_state["history_render_token"] = 0
 if "page" not in st.session_state:
     st.session_state["page"] = "Dashboard"
+
+if not st.session_state["authenticated"]:
+    _login_screen()
+    st.stop()
 
 with st.sidebar:
     st.title("🔧 ElectroDiagnose")
