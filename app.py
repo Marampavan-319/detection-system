@@ -1084,8 +1084,9 @@ st.markdown(
         box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
     }
 
-    /* Center the Create Account form without changing the Login form */
-    div[data-testid="stForm"]:has(input[aria-label="Full Name"]) {
+    /* Center both authentication forms as clean, consistent cards */
+    div[data-testid="stForm"]:has(input[aria-label="Full Name"]),
+    div[data-testid="stForm"]:has(input[aria-label="Email"]) {
         max-width: 620px;
         margin: 28px auto 36px auto;
         padding: 28px 30px 26px 30px;
@@ -1093,6 +1094,7 @@ st.markdown(
         border-radius: 20px;
         background: #ffffff;
         box-shadow: 0 12px 32px rgba(30, 64, 175, 0.10);
+        box-sizing: border-box;
     }
 
         .login-event {
