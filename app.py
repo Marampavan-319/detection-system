@@ -641,6 +641,10 @@ def _profile(records: list[dict[str, Any]]) -> None:
         st.session_state["profile_name"] = "ElectroDiagnose User"
     if "profile_role" not in st.session_state:
         st.session_state["profile_role"] = "Diagnostic user"
+    if "profile_number" not in st.session_state:
+        st.session_state["profile_number"] = ""
+    if "profile_email" not in st.session_state:
+        st.session_state["profile_email"] = ""
     if "profile_editing" not in st.session_state:
         st.session_state["profile_editing"] = False
 
@@ -656,9 +660,21 @@ def _profile(records: list[dict[str, Any]]) -> None:
                 key="edit_profile_name",
             )
             edited_role = st.text_input(
-                "Role",
+                "Role *",
                 value=st.session_state["profile_role"],
                 key="edit_profile_role",
+            )
+            edited_number = st.text_input(
+                "Phone Number *",
+                value=st.session_state["profile_number"],
+                key="edit_profile_number",
+                placeholder="Enter phone number",
+            )
+            edited_email = st.text_input(
+                "Email *",
+                value=st.session_state["profile_email"],
+                key="edit_profile_email",
+                placeholder="Enter email address",
             )
 
             ec1, ec2 = st.columns(2)
@@ -671,14 +687,24 @@ def _profile(records: list[dict[str, Any]]) -> None:
                 ):
                     name = edited_name.strip()
                     role = edited_role.strip()
+                    number = edited_number.strip()
+                    email = edited_email.strip()
 
                     if not name:
-                        st.warning("Please enter a name.")
+                        st.warning("Please enter your name.")
                     elif not role:
-                        st.warning("Please enter a role.")
+                        st.warning("Please enter your role.")
+                    elif not number:
+                        st.warning("Please enter your phone number.")
+                    elif not email:
+                        st.warning("Please enter your email.")
+                    elif "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+                        st.warning("Please enter a valid email address.")
                     else:
                         st.session_state["profile_name"] = name
                         st.session_state["profile_role"] = role
+                        st.session_state["profile_number"] = number
+                        st.session_state["profile_email"] = email
                         st.session_state["profile_editing"] = False
                         st.success("Profile updated successfully.")
                         st.rerun()
@@ -700,6 +726,8 @@ def _profile(records: list[dict[str, Any]]) -> None:
                 st.markdown(f"**{st.session_state['profile_name']}**")
                 st.caption("Hackathon prototype account")
                 st.write(f"Role: {st.session_state['profile_role']}")
+                st.write(f"Phone: {st.session_state['profile_number'] or 'Not set'}")
+                st.write(f"Email: {st.session_state['profile_email'] or 'Not set'}")
 
                 if st.button(
                     "✏️ Edit Profile",
