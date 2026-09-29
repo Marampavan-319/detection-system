@@ -205,6 +205,10 @@ with st.sidebar:
     st.divider()
     st.markdown("**Pipeline**")
     st.write("Image → Detection → Component → Localization → Reasoning → Severity → Diagnosis")
+    st.divider()
+    st.markdown("**Recent diagnosis history**")
+    for record in list_diagnoses(5):
+        st.caption(f"#{record['id']} · {record['device']} · {record['status']} · {record['confidence']:.0%}")
 
 uploaded_files = st.file_uploader(
     "Upload device / component evidence",
