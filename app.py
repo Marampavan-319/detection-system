@@ -1126,10 +1126,11 @@ st.markdown(
         box-shadow: 0 14px 40px rgba(30, 64, 175, 0.12);
     }
 
-    /* Center both authentication forms as clean, consistent cards */
+    /* Match both authentication forms to the width of the centered Demo Account button */
     div[data-testid="stForm"]:has(input[aria-label="Full Name"]),
     div[data-testid="stForm"]:has(input[aria-label="Email"]) {
-        max-width: 620px;
+        width: 100%;
+        max-width: 365px;
         margin: 28px auto 36px auto;
         padding: 28px 30px 26px 30px;
         border: 1px solid #dbeafe;
