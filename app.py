@@ -453,13 +453,22 @@ def _analytics(records: list[dict[str, Any]]) -> None:
         _render_pie_chart(status_counts, "Result of the check")
 
     st.markdown("### ⚠️ How Serious Are the Problems?")
-    severity_order = ["High", "Medium", "Low", "Unknown"]
-    ordered_severity = {
-        key: severity_counts[key]
-        for key in severity_order
-        if key in severity_counts
+    st.caption(
+        "Risk scale: 0 = Zero Risk · 1–2 = Low Risk · "
+        "3–4 = Medium Risk · 5 = High Risk"
+    )
+
+    # Keep the risk scale fixed from 0 to 5. Existing diagnosis levels are
+    # shown at representative points on that fixed scale.
+    risk_scale = {
+        0: severity_counts.get("Unknown", 0),
+        1: severity_counts.get("Low", 0),
+        2: 0,
+        3: severity_counts.get("Medium", 0),
+        4: 0,
+        5: severity_counts.get("High", 0),
     }
-    st.bar_chart(ordered_severity)
+    st.bar_chart(risk_scale, x_label="Risk level (0–5)", y_label="Number of cases")
 
     st.markdown("### 🔍 How Sure Is the AI?")
     q1, q2, q3 = st.columns(3)
