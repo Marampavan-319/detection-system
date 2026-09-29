@@ -956,7 +956,10 @@ def _login_screen() -> None:
             submitted = st.form_submit_button("🔐 Login", use_container_width=True, type="primary")
             switch_to_create = st.form_submit_button("Create Account", use_container_width=True)
         
-        if st.button("🎯 Enter Demo Account — No Password", use_container_width=True, key="demo_login"):
+        demo_col_left, demo_col, demo_col_right = st.columns([1.5, 1, 1.5])
+        with demo_col:
+            demo_login = st.button("🎯 Demo Account", use_container_width=True, key="demo_login")
+        if demo_login:
             st.session_state["authenticated"] = True
             st.session_state["demo_mode"] = True
             st.session_state["user"] = {
