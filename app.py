@@ -187,9 +187,31 @@ def _show_result(
             st.write(f"• {item}")
 
     if st.button("Save diagnosis", key="save_diagnosis"):
-        record_id = save_diagnosis(diagnosis)
+        image_dir = Path("uploads") / "diagnoses" / str(st.session_state.get("pending_case_id", "new"))
+        image_dir.mkdir(parents=True, exist_ok=True)
+
+        image_paths = []
+        for index, evidence_image in enumerate(evidence_images or [], start=1):
+            image_path = image_dir / f"evidence_{index}.png"
+            evidence_image.save(image_path, format="PNG")
+            image_paths.append(str(image_path))
+
+        annotated_path = image_dir / "annotated.png"
+        annotated.save(annotated_path, format="PNG")
+        image_paths.append(str(annotated_path))
+
+        record_id = save_diagnosis(
+            diagnosis,
+            evidence={
+                "images": image_paths,
+                "reasoning": reasoning,
+                "symptoms": symptoms,
+                "ocr_text": ocr_text,
+            },
+        )
         st.session_state["last_saved_diagnosis_id"] = record_id
         st.session_state["history_render_token"] += 1
+        st.session_state["pending_case_id"] = None
         st.success(f"Diagnosis saved to history (ID {record_id}).")
         _render_history(history_container)
 
