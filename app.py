@@ -23,6 +23,21 @@ from src.severity import score_severity
 DEVICE_OPTIONS = ["Laptop", "Smartphone", "PCB", "Router"]
 NAV_ITEMS = ["Dashboard", "AI Detector", "Analytics", "History", "Profile"]
 
+# Device-specific model slots. The existing Laptop flow keeps its current
+# yolo11n.pt default; Smartphone gets its own model path and never reuses the
+# Laptop model accidentally. Additional device models can be added later.
+DEVICE_MODEL_DEFAULTS = {
+    "Laptop": "yolo11n.pt",
+    "Smartphone": "models/smartphone_yolo11n.pt",
+    "PCB": "yolo11n.pt",
+    "Router": "yolo11n.pt",
+}
+
+
+def _default_model_path(device: str) -> str:
+    return DEVICE_MODEL_DEFAULTS.get(device, "yolo11n.pt")
+
+
 
 def _device_key(device: str) -> str:
     return device.strip().lower()
@@ -824,8 +839,19 @@ def _ai_detector() -> None:
             help="Pipeline demo uses deterministic sample detections for a reliable presentation. YOLO model runs the configured Ultralytics model.",
         )
         model_path = st.text_input(
-            "YOLO model path", value="yolo11n.pt", disabled=mode != "YOLO model"
+            "YOLO model path",
+            value=_default_model_path(device),
+            disabled=mode != "YOLO model",
+            help=(
+                "Laptop keeps its existing yolo11n.pt setting. Smartphone uses a separate "
+                "model slot at models/smartphone_yolo11n.pt so the two detectors remain independent."
+            ),
         )
+        if mode == "YOLO model" and device == "Smartphone" and not Path(model_path).exists():
+            st.warning(
+                "📱 Smartphone model is not installed yet. The Laptop detector is unchanged. "
+                "Add the trained smartphone model at models/smartphone_yolo11n.pt before running YOLO mode."
+            )
         confidence = st.slider("Detection confidence", 0.05, 0.95, 0.25, 0.05)
         iou = st.slider("IoU threshold", 0.10, 0.90, 0.45, 0.05)
         st.divider()
@@ -878,7 +904,14 @@ def _ai_detector() -> None:
                     detections = _demo_detections(device, image)
                 else:
                     with st.spinner(f"Running YOLO on {uploaded.name}..."):
-                        detections = _run_yolo(device, image, model_path, confidence, iou)
+                        if device == "Smartphone" and not Path(model_path).exists():
+                            st.error(
+                                "Smartphone YOLO model not found. Use Pipeline demo for presentation, "
+                                "or add the trained smartphone model at models/smartphone_yolo11n.pt."
+                            )
+                            detections = []
+                        else:
+                            detections = _run_yolo(device, image, model_path, confidence, iou)
 
                 result = analyze_evidence(
                     device=device, image=image, detections=detections,
