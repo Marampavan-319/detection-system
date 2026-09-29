@@ -660,6 +660,14 @@ if "latest_result" not in st.session_state:
     st.session_state["latest_result"] = None
 if "latest_annotated" not in st.session_state:
     st.session_state["latest_annotated"] = None
+if "latest_evidence_images" not in st.session_state:
+    st.session_state["latest_evidence_images"] = []
+if "latest_symptoms" not in st.session_state:
+    st.session_state["latest_symptoms"] = ""
+if "latest_ocr_text" not in st.session_state:
+    st.session_state["latest_ocr_text"] = ""
+if "pending_case_id" not in st.session_state:
+    st.session_state["pending_case_id"] = None
 if "history_render_token" not in st.session_state:
     st.session_state["history_render_token"] = 0
 if "page" not in st.session_state:
