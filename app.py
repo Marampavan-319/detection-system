@@ -493,6 +493,27 @@ def _history(records: list[dict[str, Any]]) -> None:
         )
 
     search_term = search.strip().lower()
+
+    def _case_search_text(record: dict[str, Any]) -> str:
+        parts = [
+            str(record.get("id", "")),
+            str(record.get("device", "")),
+            str(record.get("status", "")),
+            str(record.get("severity", "")),
+            str(record.get("priority", "")),
+            str(record.get("summary", "")),
+        ]
+        for finding in record.get("findings", []):
+            if isinstance(finding, dict):
+                parts.extend(str(value) for value in finding.values())
+            else:
+                parts.append(str(finding))
+        for cause in record.get("possible_causes", []):
+            parts.append(str(cause))
+        for action in record.get("next_actions", []):
+            parts.append(str(action))
+        return " ".join(parts).casefold()
+
     filtered = []
     for record in records:
         if device_filter != "All" and record["device"].title() != device_filter:
@@ -502,16 +523,7 @@ def _history(records: list[dict[str, Any]]) -> None:
         if status_filter != "All" and record["status"] != status_filter:
             continue
 
-        haystack = " ".join([
-            str(record["id"]),
-            record.get("device", ""),
-            record.get("status", ""),
-            record.get("severity", ""),
-            record.get("priority", ""),
-            record.get("summary", ""),
-            " ".join(str(x) for x in record.get("findings", [])),
-        ]).lower()
-        if search_term and search_term not in haystack:
+        if search_term and search_term.casefold() not in _case_search_text(record):
             continue
         filtered.append(record)
 
