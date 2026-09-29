@@ -463,56 +463,59 @@ def _history(records: list[dict[str, Any]]) -> None:
     m3.metric("High severity", high)
     m4.metric("Review required", review)
 
-    st.markdown("### 🔎 Find a case")
-    f1, f2, f3, f4 = st.columns([2.2, 1.1, 1.1, 1.1])
+    st.markdown("### 🔎 Find a case by Case ID")
+    st.caption("Enter the exact Case ID shown on a saved diagnosis, then open that case.")
+
+    f1, f2, f3, f4 = st.columns([2.2, 1.0, 1.0, 1.0])
 
     with f1:
-        search = st.text_input(
-            "Search",
-            placeholder="Case ID, device, status, summary, finding...",
+        case_id_input = st.text_input(
+            "Case ID",
+            placeholder="Example: 12",
             label_visibility="collapsed",
-            key="history_search",
+            key="history_case_id",
         )
     with f2:
+        find_case = st.button(
+            "🔍 Find Case",
+            type="primary",
+            use_container_width=True,
+            key="history_find_case",
+        )
+    with f3:
         device_filter = st.selectbox(
             "Device",
             ["All"] + sorted({r["device"].title() for r in records}),
             key="history_device_filter",
         )
-    with f3:
+    with f4:
         severity_filter = st.selectbox(
             "Severity",
             ["All", "HIGH", "MEDIUM", "LOW", "UNKNOWN"],
             key="history_severity_filter",
         )
-    with f4:
-        status_filter = st.selectbox(
-            "Status",
-            ["All", "DEFECT_DETECTED", "INSUFFICIENT_EVIDENCE"],
-            key="history_status_filter",
-        )
 
-    search_term = search.strip().lower()
+    status_filter = st.selectbox(
+        "Status filter",
+        ["All", "DEFECT_DETECTED", "INSUFFICIENT_EVIDENCE"],
+        key="history_status_filter",
+    )
 
-    def _case_search_text(record: dict[str, Any]) -> str:
-        parts = [
-            str(record.get("id", "")),
-            str(record.get("device", "")),
-            str(record.get("status", "")),
-            str(record.get("severity", "")),
-            str(record.get("priority", "")),
-            str(record.get("summary", "")),
-        ]
-        for finding in record.get("findings", []):
-            if isinstance(finding, dict):
-                parts.extend(str(value) for value in finding.values())
+    if find_case:
+        case_id_text = case_id_input.strip()
+        if not case_id_text:
+            st.warning("Enter a Case ID first.")
+        elif not case_id_text.isdigit():
+            st.warning("Case ID must be a number, for example 12.")
+        else:
+            requested_id = int(case_id_text)
+            selected_case = get_diagnosis(requested_id)
+            if selected_case is None:
+                st.error(f"No saved case found with Case ID #{requested_id}.")
+                st.session_state["selected_diagnosis_id"] = None
             else:
-                parts.append(str(finding))
-        for cause in record.get("possible_causes", []):
-            parts.append(str(cause))
-        for action in record.get("next_actions", []):
-            parts.append(str(action))
-        return " ".join(parts).casefold()
+                st.session_state["selected_diagnosis_id"] = requested_id
+                st.rerun()
 
     filtered = []
     for record in records:
@@ -521,9 +524,6 @@ def _history(records: list[dict[str, Any]]) -> None:
         if severity_filter != "All" and record["severity"] != severity_filter:
             continue
         if status_filter != "All" and record["status"] != status_filter:
-            continue
-
-        if search_term and search_term.casefold() not in _case_search_text(record):
             continue
         filtered.append(record)
 
