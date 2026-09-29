@@ -637,22 +637,84 @@ def _profile(records: list[dict[str, Any]]) -> None:
         else 0.0
     )
 
+    if "profile_name" not in st.session_state:
+        st.session_state["profile_name"] = "ElectroDiagnose User"
+    if "profile_role" not in st.session_state:
+        st.session_state["profile_role"] = "Diagnostic user"
+    if "profile_editing" not in st.session_state:
+        st.session_state["profile_editing"] = False
+
     st.markdown("### 👤 Profile Information")
-    p1, p2 = st.columns(2)
 
-    with p1:
+    if st.session_state["profile_editing"]:
         with st.container(border=True):
-            st.markdown("#### User")
-            st.markdown("**ElectroDiagnose User**")
-            st.caption("Hackathon prototype account")
-            st.write("Role: Diagnostic user")
+            st.markdown("#### ✏️ Edit Profile")
 
-    with p2:
-        with st.container(border=True):
-            st.markdown("#### System")
-            st.markdown("**ElectroDiagnose**")
-            st.caption("AI-assisted visual defect analysis")
-            st.write("Diagnosis history: Local SQLite database")
+            edited_name = st.text_input(
+                "Name",
+                value=st.session_state["profile_name"],
+                key="edit_profile_name",
+            )
+            edited_role = st.text_input(
+                "Role",
+                value=st.session_state["profile_role"],
+                key="edit_profile_role",
+            )
+
+            ec1, ec2 = st.columns(2)
+            with ec1:
+                if st.button(
+                    "💾 Save Changes",
+                    type="primary",
+                    use_container_width=True,
+                    key="save_profile",
+                ):
+                    name = edited_name.strip()
+                    role = edited_role.strip()
+
+                    if not name:
+                        st.warning("Please enter a name.")
+                    elif not role:
+                        st.warning("Please enter a role.")
+                    else:
+                        st.session_state["profile_name"] = name
+                        st.session_state["profile_role"] = role
+                        st.session_state["profile_editing"] = False
+                        st.success("Profile updated successfully.")
+                        st.rerun()
+
+            with ec2:
+                if st.button(
+                    "Cancel",
+                    use_container_width=True,
+                    key="cancel_profile",
+                ):
+                    st.session_state["profile_editing"] = False
+                    st.rerun()
+    else:
+        p1, p2 = st.columns(2)
+
+        with p1:
+            with st.container(border=True):
+                st.markdown("#### User")
+                st.markdown(f"**{st.session_state['profile_name']}**")
+                st.caption("Hackathon prototype account")
+                st.write(f"Role: {st.session_state['profile_role']}")
+
+                if st.button(
+                    "✏️ Edit Profile",
+                    use_container_width=True,
+                    key="edit_profile",
+                ):
+                    st.session_state["profile_editing"] = True
+                    st.rerun()
+
+        with p2:
+            with st.container(border=True):
+                st.markdown("#### System")
+                st.markdown("**ElectroDiagnose**")
+                st.caption("AI-assisted visual defect analysis")
+                st.write("Diagnosis history: Local SQLite database")
 
     st.markdown("### 📊 My Usage")
     u1, u2, u3, u4 = st.columns(4)
@@ -673,7 +735,6 @@ def _profile(records: list[dict[str, Any]]) -> None:
         "Login and account authentication will be connected in the final "
         "remodel stage."
     )
-
 
 def _ai_detector() -> None:
     st.title("🤖 AI Detector")
