@@ -21,7 +21,7 @@ from src.severity import score_severity
 
 
 DEVICE_OPTIONS = ["Laptop", "Smartphone", "PCB", "Router"]
-NAV_ITEMS = ["Dashboard", "AI Detector", "Analytics", "History", "Profile"]
+NAV_ITEMS = ["Dashboard", "AI Advisor", "Analytics", "History", "Profile"]
 
 # Device-specific model slots. The existing Laptop flow keeps its current
 # yolo11n.pt default; Smartphone gets its own model path and never reuses the
@@ -416,7 +416,7 @@ def _dashboard(records: list[dict[str, Any]]) -> None:
 
     st.markdown("### Recent diagnoses")
     if not records:
-        st.info("No saved diagnoses yet. Open AI Detector to run your first analysis.")
+        st.info("No saved diagnoses yet. Open AI Advisor to run your first analysis.")
         return
 
     for record in records[:5]:
@@ -524,7 +524,7 @@ def _history(records: list[dict[str, Any]]) -> None:
     st.caption("Search, filter, and open complete saved diagnostic cases.")
 
     if not records:
-        st.info("No saved diagnoses yet. Run and save a diagnosis from AI Detector.")
+        st.info("No saved diagnoses yet. Run and save a diagnosis from AI Advisor.")
         return
 
     selected_id = st.session_state.get("selected_diagnosis_id")
@@ -783,7 +783,7 @@ def _profile(records: list[dict[str, Any]]) -> None:
     )
 
 def _ai_detector() -> None:
-    st.title("🤖 AI Detector")
+    st.title("🤖 AI Advisor")
     st.caption("Manage diagnostic conversations and run new evidence-based analyses.")
 
     chat_mode = st.radio(
@@ -830,34 +830,28 @@ def _ai_detector() -> None:
     st.markdown("### ✨ New Chat")
     st.caption("Start a fresh diagnostic case using one or more evidence images.")
 
-    with st.sidebar:
-        st.header("Analysis Settings")
-        device = st.selectbox("Device category", DEVICE_OPTIONS)
-        mode = st.radio(
-            "Inference mode",
-            ["Pipeline demo", "YOLO model"],
-            help="Pipeline demo uses deterministic sample detections for a reliable presentation. YOLO model runs the configured Ultralytics model.",
-        )
-        model_path = st.text_input(
-            "YOLO model path",
-            value=_default_model_path(device),
-            disabled=mode != "YOLO model",
-            help=(
-                "Laptop keeps its existing yolo11n.pt setting. Smartphone uses a separate "
-                "model slot at models/smartphone_yolo11n.pt so the two detectors remain independent."
-            ),
-        )
-        if mode == "YOLO model" and device == "Smartphone" and not Path(model_path).exists():
-            st.warning(
-                "📱 Smartphone model is not installed yet. The Laptop detector is unchanged. "
-                "Add the trained smartphone model at models/smartphone_yolo11n.pt before running YOLO mode."
-            )
-        confidence = st.slider("Detection confidence", 0.05, 0.95, 0.25, 0.05)
-        iou = st.slider("IoU threshold", 0.10, 0.90, 0.45, 0.05)
-        st.divider()
-        st.markdown("**Pipeline**")
-        st.write("Image → Detection → Component → Localization → Reasoning → Severity → Diagnosis")
+    device = st.selectbox(
+        "Device category",
+        DEVICE_OPTIONS,
+        help="Choose the device type first. The corresponding trained detector is selected automatically.",
+    )
+    model_path = _default_model_path(device)
+    inference_confidence = 0.25
+    inference_iou = 0.45
 
+    st.info(f"🤖 **{device} AI Advisor** · Using device-specific model: `{model_path}`")
+
+    if not Path(model_path).exists():
+        if device == "Smartphone":
+            st.warning("📱 The latest Smartphone detector is not installed yet. Add the trained model at models/smartphone_yolo11n.pt after training completes.")
+        elif device == "Laptop":
+            st.error("💻 The existing Laptop detector yolo11n.pt is not installed in this checkout.")
+        else:
+            st.warning(f"⚠️ A dedicated trained {device} detector is not installed yet.")
+
+    st.caption("Detection confidence and IoU are handled internally by the AI pipeline. The result below reports the confidence produced by the model for each finding.")
+    st.markdown("**Pipeline**")
+    st.write("Image → Device Detector → Component → Localization → Reasoning → Severity → Diagnosis")
     history_container = st.empty()
 
     uploaded_files = st.file_uploader(
@@ -900,18 +894,12 @@ def _ai_detector() -> None:
                 ).convert("RGB")
                 last_image = image
 
-                if mode == "Pipeline demo":
-                    detections = _demo_detections(device, image)
-                else:
-                    with st.spinner(f"Running YOLO on {uploaded.name}..."):
-                        if device == "Smartphone" and not Path(model_path).exists():
-                            st.error(
-                                "Smartphone YOLO model not found. Use Pipeline demo for presentation, "
-                                "or add the trained smartphone model at models/smartphone_yolo11n.pt."
-                            )
-                            detections = []
-                        else:
-                            detections = _run_yolo(device, image, model_path, confidence, iou)
+                with st.spinner(f"Running {device} AI detector on {uploaded.name}..."):
+                    if not Path(model_path).exists():
+                        st.error(f"{device} detector model not found at {model_path}. Install the device-specific model before running this analysis.")
+                        detections = []
+                    else:
+                        detections = _run_yolo(device, image, model_path, inference_confidence, inference_iou)
 
                 result = analyze_evidence(
                     device=device, image=image, detections=detections,
@@ -940,10 +928,8 @@ def _ai_detector() -> None:
                     "diagnosis": combined_diagnosis,
                 }
                 annotated = draw_findings(last_image, all_locations)
-                if mode == "Pipeline demo":
-                    st.info("Demo mode: findings are deterministic presentation data, not model predictions.")
-                else:
-                    st.info("YOLO mode: results depend on the selected model and its trained classes.")
+                st.success(f"🤖 {device} AI detector completed. Confidence values shown in the findings are generated by the model.")
+
                 st.session_state["latest_result"] = combined
                 st.session_state["latest_annotated"] = annotated
                 st.session_state["latest_evidence_images"] = [
@@ -1417,7 +1403,7 @@ page = st.session_state["page"]
 
 if page == "Dashboard":
     _dashboard(records)
-elif page == "AI Detector":
+elif page == "AI Advisor":
     _ai_detector()
 elif page == "History":
     _history(records)
