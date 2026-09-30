@@ -27,7 +27,7 @@ NAV_ITEMS = ["Dashboard", "AI Advisor", "Analytics", "History", "Profile"]
 # yolo11n.pt default; Smartphone gets its own model path and never reuses the
 # Laptop model accidentally. Additional device models can be added later.
 DEVICE_MODEL_DEFAULTS = {
-    "Laptop": "yolo11n.pt",
+    "Laptop": "models/laptop_yolo11n.pt",
     "Smartphone": "models/smartphone_yolo11n.pt",
     "PCB": "yolo11n.pt",
     "Router": "yolo11n.pt",
@@ -787,21 +787,16 @@ def _ai_detector() -> None:
     st.caption("Manage diagnostic conversations and run new evidence-based analyses.")
 
     chat_mode = st.radio(
-        "AI Detector",
-        ["New Chat", "Old Chats"],
-        horizontal=True,
-        label_visibility="collapsed",
+        "AI Detector", ["New Chat", "Old Chats"], horizontal=True, label_visibility="collapsed",
     )
 
     if chat_mode == "Old Chats":
         st.markdown("### 💬 Old Chats")
         st.caption("Previously saved diagnostic cases. Open any case to review the complete result.")
-
         records = list_diagnoses(100)
         if not records:
             st.info("No old chats yet. Start a New Chat and save a diagnosis.")
             return
-
         selected_chat_id = st.session_state.get("selected_chat_id")
         if selected_chat_id is not None:
             selected = get_diagnosis(selected_chat_id)
@@ -812,16 +807,12 @@ def _ai_detector() -> None:
                 _show_saved_diagnosis(selected_chat_id)
                 return
             st.session_state["selected_chat_id"] = None
-
         for record in records:
             with st.container(border=True):
                 c1, c2, c3, c4 = st.columns([1.0, 1.4, 2.0, 1.0])
                 c1.write(f"**Chat #{record['id']}**")
                 c2.write(record["device"].title())
-                c3.write(
-                    f"{record['status'].replace('_', ' ').title()} · "
-                    f"{record['severity']} · {record['confidence']:.0%}"
-                )
+                c3.write(f"{record['status'].replace('_', ' ').title()} · {record['severity']} · {record['confidence']:.0%}")
                 if c4.button("Open", key=f"old_chat_{record['id']}"):
                     st.session_state["selected_chat_id"] = record["id"]
                     st.rerun()
@@ -829,157 +820,120 @@ def _ai_detector() -> None:
 
     st.markdown("### ✨ New Chat")
     st.caption("Start a fresh diagnostic case using one or more evidence images.")
-
     device = st.selectbox(
-        "Device category",
-        DEVICE_OPTIONS,
-        help="Choose the device type first. Smartphone uses its trained detector; the existing device flows keep their previous presentation behavior.",
+        "Device category", DEVICE_OPTIONS,
+        help="Choose the device type first. Laptop and Smartphone use their category-specific detector when installed.",
     )
 
-    # Preserve the original working behavior for the existing device flows.
-    # Smartphone is the only device that now uses the newly trained detector.
-    use_trained_model = device == "Smartphone"
+    use_trained_model = device in {"Laptop", "Smartphone"}
     model_path = _default_model_path(device)
     inference_confidence = 0.25
     inference_iou = 0.45
 
     if use_trained_model:
-        st.info(f"📱 **Smartphone AI Advisor** · Using trained model: {model_path}")
+        device_icon = "💻" if device == "Laptop" else "📱"
+        st.info(f"{device_icon} **{device} AI Advisor** · Using trained model slot: {model_path}")
         if not Path(model_path).exists():
             st.warning(
-                "📱 The trained Smartphone detector is not installed yet. "
-                "Add it at models/smartphone_yolo11n.pt after training completes."
+                f"{device_icon} The trained {device} detector is not installed at {model_path}. "
+                "The old hard-coded demo detection has been disabled so the app will not report a fake fixed confidence."
             )
     else:
-        st.info(
-            f"🤖 **{device} AI Advisor** · Existing presentation pipeline preserved."
-        )
+        st.info(f"🤖 **{device} AI Advisor** · Existing presentation pipeline preserved.")
 
-    st.caption(
-        "Confidence values are produced automatically by the active detection pipeline; "
-        "you do not need to set confidence or IoU manually."
-    )
+    st.caption("Confidence values are produced automatically by the active detection pipeline; you do not need to set confidence or IoU manually.")
     st.markdown("**Pipeline**")
     st.write("Image → Device Detector → Component → Localization → Reasoning → Severity → Diagnosis")
-
     history_container = st.empty()
 
     uploaded_files = st.file_uploader(
         "Upload device / component evidence",
-        type=["jpg", "jpeg", "png", "webp"],
-        accept_multiple_files=True,
-        help="You can upload multiple views of the same device.",
+        type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True,
+        help="Upload multiple views of the same device. Every uploaded image is analyzed separately.",
     )
 
     col1, col2 = st.columns(2)
     with col1:
-        symptoms = st.text_area(
-            "Symptoms (optional)",
-            placeholder="Example: Device powers on but the screen flickers.",
-            height=120,
-        )
+        symptoms = st.text_area("Symptoms (optional)", placeholder="Example: Device powers on but the screen flickers.", height=120)
     with col2:
-        ocr_text = st.text_area(
-            "Error / OCR text (optional)",
-            placeholder="Paste visible error text, diagnostic output, or log message.",
-            height=120,
-        )
+        ocr_text = st.text_area("Error / OCR text (optional)", placeholder="Paste visible error text, diagnostic output, or log message.", height=120)
 
-    analyze = st.button(
-        "🔍 Analyze Evidence", type="primary", use_container_width=True, key="new_chat_analyze"
-    )
+    analyze = st.button("🔍 Analyze Evidence", type="primary", use_container_width=True, key="new_chat_analyze")
 
     if analyze:
         if not uploaded_files:
             st.warning("Upload at least one image before analysis.")
         else:
-            all_locations: list[dict[str, Any]] = []
-            all_detections: list[dict[str, Any]] = []
-            last_image: Image.Image | None = None
-
+            all_locations = []
+            all_detections = []
+            evidence_results = []
             progress = st.progress(0.0, text="Preparing evidence...")
-            for index, uploaded in enumerate(uploaded_files, start=1):
-                image = ImageOps.exif_transpose(
-                    Image.open(BytesIO(uploaded.getvalue()))
-                ).convert("RGB")
-                last_image = image
 
+            for index, uploaded in enumerate(uploaded_files, start=1):
+                image = ImageOps.exif_transpose(Image.open(BytesIO(uploaded.getvalue()))).convert("RGB")
                 with st.spinner(f"Running {device} AI detector on {uploaded.name}..."):
                     if use_trained_model:
                         if not Path(model_path).exists():
-                            st.error(
-                                f"Smartphone detector model not found at {model_path}. "
-                                "Install the trained Smartphone model before running this analysis."
-                            )
                             detections = []
                         else:
-                            detections = _run_yolo(
-                                device, image, model_path,
-                                inference_confidence, inference_iou
-                            )
+                            detections = _run_yolo(device, image, model_path, inference_confidence, inference_iou)
                     else:
-                        # Keep the pre-Smartphone presentation flow unchanged.
                         detections = _demo_detections(device, image)
 
-                result = analyze_evidence(
-                    device=device, image=image, detections=detections,
-                    ocr_text=ocr_text, symptoms=symptoms,
-                )
+                result = analyze_evidence(device=device, image=image, detections=detections, ocr_text=ocr_text, symptoms=symptoms)
+                annotated = draw_findings(image, result["locations"])
+                evidence_results.append({
+                    "name": uploaded.name, "image": image, "annotated": annotated,
+                    "detections": result["detections"], "locations": result["locations"],
+                })
                 all_detections.extend(result["detections"])
                 all_locations.extend(result["locations"])
-                progress.progress(
-                    index / len(uploaded_files),
-                    text=f"Processed {index}/{len(uploaded_files)} evidence image(s)",
-                )
+                progress.progress(index / len(uploaded_files), text=f"Processed {index}/{len(uploaded_files)} evidence image(s)")
 
-            if last_image is not None:
-                combined_reasoning = reason_about_evidence(
-                    device=device, locations=all_locations,
-                    ocr_text=ocr_text, symptoms=symptoms,
-                )
-                combined_severity = score_severity(all_locations, combined_reasoning)
-                combined_diagnosis = diagnose(
-                    device=device, locations=all_locations,
-                    reasoning=combined_reasoning, severity=combined_severity,
-                )
-                combined = {
-                    "detections": all_detections, "locations": all_locations,
-                    "reasoning": combined_reasoning, "severity": combined_severity,
-                    "diagnosis": combined_diagnosis,
-                }
-                annotated = draw_findings(last_image, all_locations)
-                if use_trained_model:
-                    st.success(
-                        "📱 Smartphone AI detector completed. "
-                        "Confidence values shown in the findings are generated by the trained model."
-                    )
-                else:
-                    st.info(
-                        f"🤖 {device} existing presentation pipeline completed. "
-                        "Its findings are demonstration pipeline outputs."
-                    )
+            combined_reasoning = reason_about_evidence(device=device, locations=all_locations, ocr_text=ocr_text, symptoms=symptoms)
+            combined_severity = score_severity(all_locations, combined_reasoning)
+            combined_diagnosis = diagnose(device=device, locations=all_locations, reasoning=combined_reasoning, severity=combined_severity)
+            combined = {
+                "detections": all_detections, "locations": all_locations,
+                "reasoning": combined_reasoning, "severity": combined_severity,
+                "diagnosis": combined_diagnosis, "evidence_results": evidence_results,
+                "image_count": len(evidence_results),
+            }
 
-                st.session_state["latest_result"] = combined
-                st.session_state["latest_annotated"] = annotated
-                st.session_state["latest_evidence_images"] = [
-                    ImageOps.exif_transpose(Image.open(BytesIO(uploaded.getvalue()))).convert("RGB")
-                    for uploaded in uploaded_files
-                ]
-                st.session_state["latest_symptoms"] = symptoms
-                st.session_state["latest_ocr_text"] = ocr_text
+            if use_trained_model and Path(model_path).exists():
+                st.success(f"{'💻' if device == 'Laptop' else '📱'} {device} trained detector completed across all {len(evidence_results)} uploaded image(s).")
+            elif use_trained_model:
+                st.error(f"No trained {device} model is installed, so no model detections were generated. Install the category-specific model before testing.")
+            else:
+                st.info(f"🤖 {device} existing presentation pipeline completed across all {len(evidence_results)} uploaded image(s).")
 
-    if st.session_state["latest_result"] is not None and st.session_state["latest_annotated"] is not None:
+            st.session_state["latest_result"] = combined
+            st.session_state["latest_annotated"] = evidence_results[-1]["annotated"] if evidence_results else None
+            st.session_state["latest_evidence_images"] = [item["image"] for item in evidence_results]
+            st.session_state["latest_evidence_results"] = evidence_results
+            st.session_state["latest_symptoms"] = symptoms
+            st.session_state["latest_ocr_text"] = ocr_text
+
+    if st.session_state["latest_result"] is not None:
+        latest_result = st.session_state["latest_result"]
+        evidence_results = st.session_state.get("latest_evidence_results", [])
+        if evidence_results:
+            st.markdown("### 🖼️ Image-by-image analysis")
+            st.caption(f"{len(evidence_results)} of {len(evidence_results)} uploaded image(s) were analyzed.")
+            columns = st.columns(min(3, len(evidence_results)))
+            for index, item in enumerate(evidence_results, start=1):
+                with columns[(index - 1) % len(columns)]:
+                    st.markdown(f"**Image {index}: {item['name']}**")
+                    st.image(item["annotated"], caption=(f"{len(item['locations'])} finding(s) localized" if item["locations"] else "No localized findings"), use_container_width=True)
+
         _show_result(
-            st.session_state["latest_result"],
-            st.session_state["latest_annotated"],
+            latest_result,
+            evidence_results[-1]["annotated"] if evidence_results else st.session_state.get("latest_annotated"),
             history_container,
             st.session_state.get("latest_evidence_images", []),
             st.session_state.get("latest_symptoms", ""),
             st.session_state.get("latest_ocr_text", ""),
         )
-
-
-
 
 def _login_screen() -> None:
     """Render login and account creation before exposing the application."""
