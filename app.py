@@ -139,7 +139,7 @@ def _render_history(container, limit: int = 5) -> None:
 
 def _show_result(
     result: dict[str, Any],
-    annotated: Image.Image,
+    annotated: Image.Image | None,
     history_container,
     evidence_images: list[Image.Image] | None = None,
     symptoms: str = "",
@@ -150,7 +150,7 @@ def _show_result(
     reasoning = result["reasoning"]
 
     st.divider()
-    st.subheader("Diagnostic Result")
+    st.subheader("📋 Overall Diagnostic Report")
 
     if diagnosis["status"] == "DEFECT_DETECTED":
         st.error("🔴 Defect evidence detected")
@@ -165,7 +165,8 @@ def _show_result(
 
     left, right = st.columns([1.15, 1])
     with left:
-        st.image(annotated, caption="Localized evidence", use_container_width=True)
+        if annotated is not None:
+            st.image(annotated, caption="Combined localized evidence", use_container_width=True)
     with right:
         st.markdown("#### Summary")
         st.write(diagnosis["summary"])
@@ -883,8 +884,14 @@ def _ai_detector() -> None:
                 result = analyze_evidence(device=device, image=image, detections=detections, ocr_text=ocr_text, symptoms=symptoms)
                 annotated = draw_findings(image, result["locations"])
                 evidence_results.append({
-                    "name": uploaded.name, "image": image, "annotated": annotated,
-                    "detections": result["detections"], "locations": result["locations"],
+                    "name": uploaded.name,
+                    "image": image,
+                    "annotated": annotated,
+                    "detections": result["detections"],
+                    "locations": result["locations"],
+                    "reasoning": result["reasoning"],
+                    "severity": result["severity"],
+                    "diagnosis": result["diagnosis"],
                 })
                 all_detections.extend(result["detections"])
                 all_locations.extend(result["locations"])
@@ -917,18 +924,73 @@ def _ai_detector() -> None:
     if st.session_state["latest_result"] is not None:
         latest_result = st.session_state["latest_result"]
         evidence_results = st.session_state.get("latest_evidence_results", [])
+
         if evidence_results:
-            st.markdown("### 🖼️ Image-by-image analysis")
-            st.caption(f"{len(evidence_results)} of {len(evidence_results)} uploaded image(s) were analyzed.")
-            columns = st.columns(min(3, len(evidence_results)))
+            st.markdown("### 🖼️ Individual Image Analysis")
+            st.caption(
+                f"{len(evidence_results)} of {len(evidence_results)} uploaded image(s) were analyzed independently."
+            )
+
             for index, item in enumerate(evidence_results, start=1):
-                with columns[(index - 1) % len(columns)]:
-                    st.markdown(f"**Image {index}: {item['name']}**")
-                    st.image(item["annotated"], caption=(f"{len(item['locations'])} finding(s) localized" if item["locations"] else "No localized findings"), use_container_width=True)
+                image_diagnosis = item["diagnosis"]
+                image_reasoning = item["reasoning"]
+
+                with st.container(border=True):
+                    st.markdown(f"#### Image {index} — {item['name']}")
+                    image_col, detail_col = st.columns([1, 2.5])
+
+                    with image_col:
+                        st.image(
+                            item["annotated"],
+                            caption=(
+                                f"{len(item['locations'])} localized finding(s)"
+                                if item["locations"]
+                                else "No localized findings"
+                            ),
+                            width=230,
+                        )
+
+                    with detail_col:
+                        im1, im2, im3 = st.columns(3)
+                        im1.metric("Confidence", f"{image_diagnosis['confidence']:.0%}")
+                        im2.metric("Severity", image_diagnosis["severity"])
+                        im3.metric(
+                            "Result",
+                            "Defect detected"
+                            if image_diagnosis["status"] == "DEFECT_DETECTED"
+                            else "Insufficient evidence",
+                        )
+
+                        st.markdown("**Explanation**")
+                        st.write(image_diagnosis["summary"])
+
+                        if image_diagnosis["findings"]:
+                            st.markdown("**Findings**")
+                            for finding in image_diagnosis["findings"]:
+                                st.write(
+                                    f"• **{finding['defect']}** → {finding['component']} "
+                                    f"({finding['region']}) · {finding['confidence']:.0%}"
+                                )
+                        else:
+                            st.write("No localized findings were identified in this image.")
+
+                        if image_reasoning["evidence"]:
+                            st.markdown("**Evidence observed**")
+                            for evidence_item in image_reasoning["evidence"][:3]:
+                                st.write(f"• {evidence_item}")
+
+                        if image_diagnosis["next_actions"]:
+                            st.markdown("**Recommended action**")
+                            st.write(image_diagnosis["next_actions"][0])
+
+        st.markdown("### 📊 Overall Report")
+        st.caption(
+            "This report combines the evidence from every uploaded image; it is not based only on the last image."
+        )
 
         _show_result(
             latest_result,
-            evidence_results[-1]["annotated"] if evidence_results else st.session_state.get("latest_annotated"),
+            None,
             history_container,
             st.session_state.get("latest_evidence_images", []),
             st.session_state.get("latest_symptoms", ""),
