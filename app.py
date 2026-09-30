@@ -784,6 +784,21 @@ def _profile(records: list[dict[str, Any]]) -> None:
         "remodel stage."
     )
 
+def _clear_ai_advisor_case() -> None:
+    """Clear the active New Chat evidence whenever the device category changes."""
+    for key in (
+        "latest_result",
+        "latest_annotated",
+        "latest_evidence_images",
+        "latest_evidence_results",
+        "latest_symptoms",
+        "latest_ocr_text",
+    ):
+        st.session_state[key] = [] if key in {"latest_evidence_images", "latest_evidence_results"} else ("" if key in {"latest_symptoms", "latest_ocr_text"} else None)
+    st.session_state["advisor_uploads"] = None
+    st.session_state["advisor_case_device"] = st.session_state.get("advisor_device")
+
+
 def _ai_detector() -> None:
     st.title("🤖 AI Advisor")
     st.caption("Manage diagnostic conversations and run new evidence-based analyses.")
@@ -822,9 +837,17 @@ def _ai_detector() -> None:
 
     st.markdown("### ✨ New Chat")
     st.caption("Start a fresh diagnostic case using one or more evidence images.")
+    if "advisor_device" not in st.session_state:
+        st.session_state["advisor_device"] = DEVICE_OPTIONS[0]
+    if "advisor_case_device" not in st.session_state:
+        st.session_state["advisor_case_device"] = st.session_state["advisor_device"]
+
     device = st.selectbox(
-        "Device category", DEVICE_OPTIONS,
-        help="Choose the device type first. Laptop and Smartphone use their category-specific detector when installed.",
+        "Device category",
+        DEVICE_OPTIONS,
+        key="advisor_device",
+        on_change=_clear_ai_advisor_case,
+        help="Choose the device type first. Changing the device starts a fresh diagnostic case and clears the previous evidence and results.",
     )
 
     use_trained_model = device in {"Laptop", "Smartphone"}
@@ -850,8 +873,10 @@ def _ai_detector() -> None:
 
     uploaded_files = st.file_uploader(
         "Upload device / component evidence",
-        type=["jpg", "jpeg", "png", "webp"], accept_multiple_files=True,
-        help="Upload multiple views of the same device. Every uploaded image is analyzed separately.",
+        type=["jpg", "jpeg", "png", "webp"],
+        accept_multiple_files=True,
+        key="advisor_uploads",
+        help="Upload multiple views of the same device. Every uploaded image is analyzed separately. Changing the device clears the previous uploads.",
     )
 
     col1, col2 = st.columns(2)
