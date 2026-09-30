@@ -1084,7 +1084,7 @@ st.markdown(
     }
 
     [data-testid="stHeader"] {
-        display: none !important;
+        display: flex !important;
     }
 
     [data-testid="stToolbar"] {
