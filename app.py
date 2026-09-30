@@ -1087,6 +1087,19 @@ st.markdown(
         display: flex !important;
     }
 
+    /* Keep the navigation sidebar permanently available.
+       The native collapse/expand control is intentionally hidden. */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebar"] button[aria-label*="Collapse sidebar"],
+    [data-testid="stSidebar"] button[aria-label*="Expand sidebar"] {
+        display: none !important;
+    }
+
+    [data-testid="stSidebar"] {
+        transform: none !important;
+        visibility: visible !important;
+    }
+
     [data-testid="stToolbar"] {
         display: none !important;
     }
