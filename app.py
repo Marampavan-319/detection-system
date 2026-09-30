@@ -214,9 +214,10 @@ def _show_result(
             evidence_image.save(image_path, format="PNG")
             image_paths.append(str(image_path))
 
-        annotated_path = image_dir / "annotated.png"
-        annotated.save(annotated_path, format="PNG")
-        image_paths.append(str(annotated_path))
+        if annotated is not None:
+            annotated_path = image_dir / "annotated.png"
+            annotated.save(annotated_path, format="PNG")
+            image_paths.append(str(annotated_path))
 
         if st.session_state.get("demo_mode", False):
             record_id = len(st.session_state.get("demo_records", [])) + 1
