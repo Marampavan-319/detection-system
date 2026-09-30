@@ -1087,18 +1087,23 @@ st.markdown(
         display: flex !important;
     }
 
-    /* Keep the navigation sidebar permanently available.
-       The native collapse/expand control is intentionally hidden. */
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebar"] button[aria-label*="Collapse sidebar"],
-    [data-testid="stSidebar"] button[aria-label*="Expand sidebar"] {
+    /* Keep the navigation sidebar permanently visible. */
+    [data-testid="stSidebar"],
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        transform: translateX(0) !important;
+        width: 336px !important;
+        min-width: 336px !important;
+        max-width: 336px !important;
+    }
+
+    /* Hide only the collapsed-sidebar overlay/control, never the sidebar itself. */
+    [data-testid="stSidebarCollapsedControl"] {
         display: none !important;
     }
 
-    [data-testid="stSidebar"] {
-        transform: none !important;
-        visibility: visible !important;
-    }
 
     [data-testid="stToolbar"] {
         display: none !important;
