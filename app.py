@@ -795,7 +795,11 @@ def _clear_ai_advisor_case() -> None:
         "latest_ocr_text",
     ):
         st.session_state[key] = [] if key in {"latest_evidence_images", "latest_evidence_results"} else ("" if key in {"latest_symptoms", "latest_ocr_text"} else None)
-    st.session_state["advisor_uploads"] = None
+
+    # Streamlit does not allow callbacks to assign a value to a widget key
+    # after that widget has been instantiated. Rotate the uploader key instead;
+    # the new widget starts empty on the next rerun.
+    st.session_state["advisor_upload_generation"] = st.session_state.get("advisor_upload_generation", 0) + 1
     st.session_state["advisor_case_device"] = st.session_state.get("advisor_device")
 
 
@@ -841,6 +845,8 @@ def _ai_detector() -> None:
         st.session_state["advisor_device"] = DEVICE_OPTIONS[0]
     if "advisor_case_device" not in st.session_state:
         st.session_state["advisor_case_device"] = st.session_state["advisor_device"]
+    if "advisor_upload_generation" not in st.session_state:
+        st.session_state["advisor_upload_generation"] = 0
 
     device = st.selectbox(
         "Device category",
@@ -875,7 +881,7 @@ def _ai_detector() -> None:
         "Upload device / component evidence",
         type=["jpg", "jpeg", "png", "webp"],
         accept_multiple_files=True,
-        key="advisor_uploads",
+        key=f"advisor_uploads_{st.session_state['advisor_upload_generation']}",
         help="Upload multiple views of the same device. Every uploaded image is analyzed separately. Changing the device clears the previous uploads.",
     )
 
