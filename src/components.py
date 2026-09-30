@@ -27,6 +27,9 @@ DEFAULT_COMPONENT_MAP: dict[str, dict[str, tuple[str, str]]] = {
     },
     "smartphone": {
         "screen": ("display", "display subsystem"),
+        "screen crack": ("display", "display subsystem"),
+        "scratch": ("display", "display subsystem"),
+        "dead pixel": ("display", "display subsystem"),
         "camera": ("camera module", "camera subsystem"),
         "port": ("charging port", "power/I-O subsystem"),
         "battery": ("battery", "power subsystem"),
